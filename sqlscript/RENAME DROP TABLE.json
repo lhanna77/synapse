@@ -1,0 +1,20 @@
+{
+	"name": "RENAME DROP TABLE",
+	"properties": {
+		"folder": {
+			"name": "Dedicated"
+		},
+		"content": {
+			"query": "RENAME OBJECT FactInternetSales TO FactInternetSales_old;\nRENAME OBJECT FactInternetSales_new TO FactInternetSales;\n\nDROP TABLE FactInternetSales_old;",
+			"metadata": {
+				"language": "sql"
+			},
+			"currentConnection": {
+				"databaseName": "master",
+				"poolName": "Built-in"
+			},
+			"resultLimit": 5000
+		},
+		"type": "SqlQuery"
+	}
+}
