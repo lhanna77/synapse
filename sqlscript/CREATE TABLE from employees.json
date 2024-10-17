@@ -1,11 +1,11 @@
 {
-	"name": "CREATE TABLE employees_it",
+	"name": "CREATE TABLE from employees",
 	"properties": {
 		"folder": {
 			"name": "Dedicated"
 		},
 		"content": {
-			"query": "CREATE TABLE dbo.employees_2\nWITH\n(\n    DISTRIBUTION = HASH(empID),\n    CLUSTERED COLUMNSTORE INDEX\n)\nAS\nSELECT * FROM dbo.employees\nWHERE dept = 'IT'\n\nSELECT * FROM dbo.employees_2\n",
+			"query": "SELECT *\nINTO dbo.employees_5\nFROM dbo.employees;\n\n--OR\n\n--Can set DISTRIBUTION / INDEX\nCREATE TABLE dbo.employees_2\nWITH\n(\n    DISTRIBUTION = HASH(empID),\n    CLUSTERED COLUMNSTORE INDEX\n)\nAS\nSELECT * FROM dbo.employees\nWHERE dept = 'IT'\n\nSELECT * FROM dbo.employees_2\n",
 			"metadata": {
 				"language": "sql"
 			},
