@@ -1,0 +1,20 @@
+{
+	"name": "CREATE TABLE employees",
+	"properties": {
+		"folder": {
+			"name": "Dedicated"
+		},
+		"content": {
+			"query": "CREATE TABLE [dbo].[employees]\n(\n    empID INT NOT NULL,\n    empName NVARCHAR(50),\n    gender NVARCHAR(50),\n    dept NVARCHAR(50)\n)\nWITH\n(\n    DISTRIBUTION = HASH(empID),\n    CLUSTERED COLUMNSTORE INDEX\n)\nGO\n\nINSERT INTO dbo.employees VALUES(1, 'John', 'Male', 'IT')\nINSERT INTO dbo.employees VALUES(2, 'Sophia', 'Female', 'HR')\nINSERT INTO dbo.employees VALUES(3, 'Vinny', 'Female', 'Sales')\nINSERT INTO dbo.employees VALUES(4, 'Tom', 'Male', 'IT')\nINSERT INTO dbo.employees VALUES(5, 'Jennifer', 'Female', 'IT')\nINSERT INTO dbo.employees VALUES(6, 'Bruce', 'Male', 'HR')\nINSERT INTO dbo.employees VALUES(7, 'David', 'Male', 'Sales')\nINSERT INTO dbo.employees VALUES(8, 'Neena', 'Female', 'Sales')\n\nSELECT * FROM dbo.employees\n",
+			"metadata": {
+				"language": "sql"
+			},
+			"currentConnection": {
+				"databaseName": "master",
+				"poolName": "Built-in"
+			},
+			"resultLimit": 5000
+		},
+		"type": "SqlQuery"
+	}
+}

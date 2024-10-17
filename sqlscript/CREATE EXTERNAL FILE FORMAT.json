@@ -1,6 +1,9 @@
 {
 	"name": "CREATE EXTERNAL FILE FORMAT",
 	"properties": {
+		"folder": {
+			"name": "Serverless"
+		},
 		"content": {
 			"query": "USE demoDB\nGO\n\nCREATE EXTERNAL FILE FORMAT parquetFileFormat\nWITH\n(  \n    FORMAT_TYPE = PARQUET,\n    DATA_COMPRESSION = 'org.apache.hadoop.io.compress.SnappyCodec'\n)",
 			"metadata": {

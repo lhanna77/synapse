@@ -1,0 +1,20 @@
+{
+	"name": "CREATE TABLE employees_it",
+	"properties": {
+		"folder": {
+			"name": "Dedicated"
+		},
+		"content": {
+			"query": "CREATE TABLE dbo.employees_2\nWITH\n(\n    DISTRIBUTION = HASH(empID),\n    CLUSTERED COLUMNSTORE INDEX\n)\nAS\nSELECT * FROM dbo.employees\nWHERE dept = 'IT'\n\nSELECT * FROM dbo.employees_2\n",
+			"metadata": {
+				"language": "sql"
+			},
+			"currentConnection": {
+				"databaseName": "master",
+				"poolName": "Built-in"
+			},
+			"resultLimit": 5000
+		},
+		"type": "SqlQuery"
+	}
+}
