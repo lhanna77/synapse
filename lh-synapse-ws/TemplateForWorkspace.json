@@ -209,7 +209,7 @@
 			"dependsOn": []
 		},
 		{
-			"name": "[concat(parameters('workspaceName'), '/CREATE TABLE employees_it')]",
+			"name": "[concat(parameters('workspaceName'), '/CREATE TABLE from employees')]",
 			"type": "Microsoft.Synapse/workspaces/sqlscripts",
 			"apiVersion": "2019-06-01-preview",
 			"properties": {
@@ -217,7 +217,7 @@
 					"name": "Dedicated"
 				},
 				"content": {
-					"query": "CREATE TABLE dbo.employees_2\nWITH\n(\n    DISTRIBUTION = HASH(empID),\n    CLUSTERED COLUMNSTORE INDEX\n)\nAS\nSELECT * FROM dbo.employees\nWHERE dept = 'IT'\n\nSELECT * FROM dbo.employees_2\n",
+					"query": "SELECT *\nINTO dbo.employees_5\nFROM dbo.employees;\n\n--OR\n\n--Can set DISTRIBUTION / INDEX\nCREATE TABLE dbo.employees_2\nWITH\n(\n    DISTRIBUTION = HASH(empID),\n    CLUSTERED COLUMNSTORE INDEX\n)\nAS\nSELECT * FROM dbo.employees\nWHERE dept = 'IT'\n\nSELECT * FROM dbo.employees_2\n",
 					"metadata": {
 						"language": "sql"
 					},
@@ -682,6 +682,75 @@
 						"execution_count": null
 					}
 				]
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/RENAME DROP TABLE')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"folder": {
+					"name": "Dedicated"
+				},
+				"content": {
+					"query": "RENAME OBJECT FactInternetSales TO FactInternetSales_old;\nRENAME OBJECT FactInternetSales_new TO FactInternetSales;\n\nDROP TABLE FactInternetSales_old;",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "master",
+						"poolName": "Built-in"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/CREATE TABLE FactInternetSales')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"folder": {
+					"name": "Dedicated"
+				},
+				"content": {
+					"query": "CREATE TABLE FactInternetSales\n(\n    ProductKey int NOT NULL,\n    OrderDateKey int NOT NULL,\n    DueDateKey int NOT NULL,\n    ShipDateKey int NOT NULL,\n    CustomerKey int NOT NULL,\n    PromotionKey int NOT NULL,\n    CurrencyKey int NOT NULL,\n    SalesTerritoryKey int NOT NULL,\n    SalesOrderNumber nvarchar(20) NOT NULL,\n    SalesOrderLineNumber tinyint NOT NULL,\n    RevisionNumber tinyint NOT NULL,\n    OrderQuantity smallint NOT NULL,\n    UnitPrice money NOT NULL,\n    ExtendedAmount money NOT NULL,\n    UnitPriceDiscountPct float NOT NULL,\n    DiscountAmount float NOT NULL,\n    ProductStandardCost money NOT NULL,\n    TotalProductCost money NOT NULL,\n    SalesAmount money NOT NULL,\n    TaxAmt money NOT NULL,\n    Freight money NOT NULL,\n    CarrierTrackingNumber nvarchar(25),\n    CustomerPONumber nvarchar(25)\n)\nWITH( \n HEAP, -- Cols not sorted like column store\n DISTRIBUTION = ROUND_ROBIN \n);\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "master",
+						"poolName": "Built-in"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/CREATE TABLE PARTITION')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"folder": {
+					"name": "Dedicated"
+				},
+				"content": {
+					"query": "CREATE TABLE FactInternetSales_new\nWITH\n(\n    CLUSTERED COLUMNSTORE INDEX,\n    DISTRIBUTION = HASH(ProductKey),\n    PARTITION\n    (\n        OrderDateKey RANGE RIGHT FOR VALUES\n        (\n        20000101,20010101,20020101,20030101,20040101,20050101,20060101,20070101,20080101,20090101,\n        20100101,20110101,20120101,20130101,20140101,20150101,20160101,20170101,20180101,20190101,\n        20200101,20210101,20220101,20230101,20240101,20250101,20260101,20270101,20280101,20290101\n        )\n    )\n)\nAS SELECT * FROM FactInternetSales;\n\n",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "master",
+						"poolName": "Built-in"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
 			},
 			"dependsOn": []
 		}
