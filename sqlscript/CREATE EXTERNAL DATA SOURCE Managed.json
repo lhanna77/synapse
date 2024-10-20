@@ -5,7 +5,7 @@
 			"name": "Serverless"
 		},
 		"content": {
-			"query": "IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'demoDB')\n    CREATE DATABASE demoDB\nGO\n\nUSE demoDB\nGO\n\n-- CREATE MASTER KEY ENCRYPTION BY PASSWORD = 'Password01'\n-- GO\n\nCREATE DATABASE SCOPED CREDENTIAL myCredentialManaged\nWITH IDENTITY = 'Managed Identity'\nGO\n\nCREATE EXTERNAL DATA SOURCE myDataSource WITH (\n    LOCATION = 'https://lhadlsgen2storage.blob.core.windows.net/',\n    CREDENTIAL = myCredentialManaged\n)",
+			"query": "IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'demoDB')\n    CREATE DATABASE demoDB\nGO\n\nUSE demoDB\nGO\n\n-- CREATE MASTER KEY ENCRYPTION BY PASSWORD = 'Password01'\n-- GO\n\nCREATE DATABASE SCOPED CREDENTIAL myCredentialManaged\nWITH IDENTITY = 'Managed Identity'\nGO\n\nCREATE EXTERNAL DATA SOURCE myDataSourceManaged WITH (\n    LOCATION = 'https://lhadlsgen2storage.blob.core.windows.net/',\n    CREDENTIAL = myCredentialManaged\n)",
 			"metadata": {
 				"language": "sql"
 			},
