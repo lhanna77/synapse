@@ -5,7 +5,7 @@
 			"name": "Serverless"
 		},
 		"content": {
-			"query": "CREATE DATABASE demoDB\nGO\n\nUSE demoDB\nGO\n\nCREATE MASTER KEY ENCRYPTION BY PASSWORD = 'Password01'\nGO\n\nCREATE DATABASE SCOPED CREDENTIAL myCredentialSAS\nWITH IDENTITY = 'SHARED ACCESS SIGNATURE',\nSECRET = 'sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupyx&se=2024-12-25T21:20:16Z&st=2024-10-20T12:20:16Z&spr=https&sig=RW0QcAdQVYoXoHK99LPAiKKGBMM9iPiUH%2F%2FMgmedl7c%3D'\nGO\n\nCREATE EXTERNAL DATA SOURCE myDataSourceSAS WITH(\n    LOCATION = 'https://lhadlsgen2storage.blob.core.windows.net/',\n    CREDENTIAL = myCredentialDb\n    )\n\n",
+			"query": "CREATE DATABASE demoDB\nGO\n\nUSE demoDB\nGO\n\nCREATE MASTER KEY ENCRYPTION BY PASSWORD = 'Password01'\nGO\n\nCREATE DATABASE SCOPED CREDENTIAL myCredentialSAS\nWITH IDENTITY = 'SHARED ACCESS SIGNATURE',\nSECRET = 'sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupyx&se=2024-12-25T21:20:16Z&st=2024-10-20T12:20:16Z&spr=https&sig=RW0QcAdQVYoXoHK99LPAiKKGBMM9iPiUH%2F%2FMgmedl7c%3D'\nGO\n\nCREATE EXTERNAL DATA SOURCE myDataSourceSAS WITH (\n    LOCATION = 'https://lhadlsgen2storage.blob.core.windows.net/',\n    CREDENTIAL = myCredentialDb\n)\n\n",
 			"metadata": {
 				"language": "sql"
 			},
