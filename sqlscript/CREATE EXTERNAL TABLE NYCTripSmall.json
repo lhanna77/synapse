@@ -1,5 +1,5 @@
 {
-	"name": "CREATE EXTERNAL TABLE",
+	"name": "CREATE EXTERNAL TABLE NYCTripSmall",
 	"properties": {
 		"folder": {
 			"name": "Serverless"
