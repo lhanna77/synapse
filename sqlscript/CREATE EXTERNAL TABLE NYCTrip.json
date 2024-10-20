@@ -1,5 +1,5 @@
 {
-	"name": "CREATE DATABASE SCOPED CREDENTIAL",
+	"name": "CREATE EXTERNAL TABLE NYCTrip",
 	"properties": {
 		"folder": {
 			"name": "Serverless"
