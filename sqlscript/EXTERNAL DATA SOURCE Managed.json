@@ -1,0 +1,20 @@
+{
+	"name": "EXTERNAL DATA SOURCE Managed",
+	"properties": {
+		"folder": {
+			"name": "Serverless"
+		},
+		"content": {
+			"query": "-- CREATE DATABASE demoDB\n-- GO\n\nUSE demoDB\nGO\n\n-- CREATE MASTER KEY ENCRYPTION BY PASSWORD = 'Password01'\n-- GO\n\nCREATE DATABASE SCOPED CREDENTIAL myCredentialManaged\nWITH IDENTITY = 'Managed Identity'\nGO\n\nCREATE EXTERNAL DATA SOURCE myDataSource WITH (\n    LOCATION = 'https://lhadlsgen2storage.blob.core.windows.net/',\n    CREDENTIAL = myCredentialManaged\n)",
+			"metadata": {
+				"language": "sql"
+			},
+			"currentConnection": {
+				"databaseName": "master",
+				"poolName": "Built-in"
+			},
+			"resultLimit": 5000
+		},
+		"type": "SqlQuery"
+	}
+}
