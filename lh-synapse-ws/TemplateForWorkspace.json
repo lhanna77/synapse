@@ -125,30 +125,7 @@
 					"name": "Serverless"
 				},
 				"content": {
-					"query": "CREATE DATABASE newDB\nGO\n\nUSE newDB\nGO\n\nCREATE MASTER KEY ENCRYPTION BY PASSWORD = 'Password01'\nGO\n\nCREATE DATABASE SCOPED CREDENTIAL myCredential\nWITH IDENTITY = 'Managed Identity'\nGO\n\nCREATE EXTERNAL DATA SOURCE myDataSource WITH(\n    LOCATION = 'https://lhadlsgen2storage.blob.core.windows.net/',\n    CREDENTIAL = myCredential\n    )\n\nCREATE EXTERNAL FILE FORMAT parquetFileFormat\nWITH\n(  \n    FORMAT_TYPE = PARQUET,\n    DATA_COMPRESSION = 'org.apache.hadoop.io.compress.SnappyCodec'\n)\n\nCREATE SCHEMA NYCTaxi\nGO\n\nCREATE EXTERNAL TABLE NYCTaxi.passengerDetails\nWITH(\n    LOCATION = 'lh-synapse-container/NYCTaxi_2/data',\n    DATA_SOURCE = myDataSource,\n    FILE_FORMAT = parquetFileFormat\n)\nAS\nSELECT\n    TOP 10 *\nFROM\n    OPENROWSET(\n        BULK 'https://lhadlsgen2storage.dfs.core.windows.net/lh-synapse-container/Data/NYCTripSmall.parquet',\n        FORMAT = 'PARQUET'\n    ) AS [result]\nGO\n\nSELECT * FROM NYCTaxi.passengerDetails\n",
-					"metadata": {
-						"language": "sql"
-					},
-					"currentConnection": {
-						"databaseName": "newDB",
-						"poolName": "Built-in"
-					},
-					"resultLimit": 5000
-				},
-				"type": "SqlQuery"
-			},
-			"dependsOn": []
-		},
-		{
-			"name": "[concat(parameters('workspaceName'), '/CREATE EXTERNAL FILE FORMAT')]",
-			"type": "Microsoft.Synapse/workspaces/sqlscripts",
-			"apiVersion": "2019-06-01-preview",
-			"properties": {
-				"folder": {
-					"name": "Serverless"
-				},
-				"content": {
-					"query": "USE demoDB\nGO\n\nCREATE EXTERNAL FILE FORMAT parquetFileFormat\nWITH\n(  \n    FORMAT_TYPE = PARQUET,\n    DATA_COMPRESSION = 'org.apache.hadoop.io.compress.SnappyCodec'\n)",
+					"query": "IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'demoDB')\n    CREATE DATABASE demoDB\nGO\n\nUSE demoDB\nGO\n\n-----\n\nIF NOT EXISTS (SELECT * FROM sys.schemas WHERE name = 'NYCTaxi')\n    CREATE SCHEMA NYCTaxi\nGO\n\nCREATE EXTERNAL TABLE NYCTaxi.NYCTrip\nWITH(\n    LOCATION = 'lh-synapse-container/NYCTrip/data',\n    DATA_SOURCE = myDataSourceManaged,\n    FILE_FORMAT = parquetFileFormat\n)\nAS\nSELECT\n    TOP 100 *\nFROM\n    OPENROWSET(\n        BULK 'https://lhadlsgen2storage.dfs.core.windows.net/lh-synapse-container/Data/NYCTrip.parquet',\n        FORMAT = 'PARQUET'\n    ) AS [result]\nGO\n\nSELECT * FROM NYCTaxi.NYCTrip\n",
 					"metadata": {
 						"language": "sql"
 					},
@@ -163,7 +140,7 @@
 			"dependsOn": []
 		},
 		{
-			"name": "[concat(parameters('workspaceName'), '/CREATE EXTERNAL TABLE')]",
+			"name": "[concat(parameters('workspaceName'), '/CREATE EXTERNAL DATA SOURCE Managed')]",
 			"type": "Microsoft.Synapse/workspaces/sqlscripts",
 			"apiVersion": "2019-06-01-preview",
 			"properties": {
@@ -171,12 +148,127 @@
 					"name": "Serverless"
 				},
 				"content": {
-					"query": "USE demoDB\nGO\n\nCREATE SCHEMA NYCTaxi\nGO\n\nCREATE EXTERNAL TABLE NYCTaxi.passengerDetails\nWITH(\n    LOCATION = 'lh-synapse-container/NYCTaxi/data',\n    DATA_SOURCE = myDataSource,\n    FILE_FORMAT = parquetFileFormat\n)\nAS\nSELECT\n    TOP 100 *\nFROM\n    OPENROWSET(\n        BULK 'https://lhadlsgen2storage.dfs.core.windows.net/lh-synapse-container/Data/NYCTripSmall.parquet',\n        FORMAT = 'PARQUET'\n    ) AS [result]\nGO\n\nSELECT * FROM NYCTaxi.passengerDetails\n\n\n\n",
+					"query": "IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'demoDB')\n    CREATE DATABASE demoDB\nGO\n\nUSE demoDB\nGO\n\n-- CREATE MASTER KEY ENCRYPTION BY PASSWORD = 'Password01'\n-- GO\n\nCREATE DATABASE SCOPED CREDENTIAL myCredentialManaged\nWITH IDENTITY = 'Managed Identity'\nGO\n\nCREATE EXTERNAL DATA SOURCE myDataSourceManaged WITH (\n    LOCATION = 'https://lhadlsgen2storage.blob.core.windows.net/',\n    CREDENTIAL = myCredentialManaged\n)",
 					"metadata": {
 						"language": "sql"
 					},
 					"currentConnection": {
 						"databaseName": "demoDB",
+						"poolName": "Built-in"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/CREATE EXTERNAL DATA SOURCE SAS')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"folder": {
+					"name": "Serverless"
+				},
+				"content": {
+					"query": "IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'demoDB')\n    CREATE DATABASE demoDB\nGO\n\nUSE demoDB\nGO\n\n-- CREATE MASTER KEY ENCRYPTION BY PASSWORD = 'Password01'\n-- GO\n\nCREATE DATABASE SCOPED CREDENTIAL myCredentialSAS\nWITH IDENTITY = 'SHARED ACCESS SIGNATURE',\nSECRET = 'sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupyx&se=2024-12-25T01:06:55Z&st=2024-10-20T16:06:55Z&spr=https&sig=MytV9E6HHchIDFYFwzJR8ZcGXb5SsE9HmKaE1qxjtwc%3D'\nGO\n\nCREATE EXTERNAL DATA SOURCE myDataSourceSAS WITH (\n    LOCATION = 'https://lhadlsgen2storage.blob.core.windows.net/',\n    CREDENTIAL = myCredentialSAS\n)\n\n",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "demoDB",
+						"poolName": "Built-in"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/CREATE EXTERNAL FILE FORMAT parquet')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"folder": {
+					"name": "Serverless"
+				},
+				"content": {
+					"query": "IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'demoDB')\n    CREATE DATABASE demoDB\nGO\n\nUSE demoDB\nGO\n\n-- CREATE MASTER KEY ENCRYPTION BY PASSWORD = 'Password01'\n-- GO\n\nCREATE EXTERNAL FILE FORMAT parquetFileFormat\nWITH\n(  \n    FORMAT_TYPE = PARQUET,\n    DATA_COMPRESSION = 'org.apache.hadoop.io.compress.SnappyCodec'\n)",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "master",
+						"poolName": "Built-in"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/CREATE EXTERNAL TABLE NYCTripSmall')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"folder": {
+					"name": "Serverless"
+				},
+				"content": {
+					"query": "IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'demoDB')\n    CREATE DATABASE demoDB\nGO\n\nUSE demoDB\nGO\n\n-----\n\nIF NOT EXISTS (SELECT * FROM sys.schemas WHERE name = 'NYCTaxi')\n    CREATE SCHEMA NYCTaxi\nGO\n\nCREATE EXTERNAL TABLE NYCTaxi.NYCTripSmall\nWITH(\n    LOCATION = 'lh-synapse-container/NYCTripSmall/data',\n    DATA_SOURCE = myDataSourceSAS,\n    FILE_FORMAT = parquetFileFormat\n)\nAS\nSELECT\n    *\nFROM\n    OPENROWSET(\n        BULK 'https://lhadlsgen2storage.dfs.core.windows.net/lh-synapse-container/Data/NYCTripSmall.parquet',\n        FORMAT = 'PARQUET'\n    ) AS [result]\nGO\n\nSELECT * FROM NYCTaxi.NYCTripSmall",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "demoDB",
+						"poolName": "Built-in"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/CREATE TABLE FactInternetSales')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"folder": {
+					"name": "Dedicated"
+				},
+				"content": {
+					"query": "CREATE TABLE FactInternetSales\n(\n    ProductKey int NOT NULL,\n    OrderDateKey int NOT NULL,\n    DueDateKey int NOT NULL,\n    ShipDateKey int NOT NULL,\n    CustomerKey int NOT NULL,\n    PromotionKey int NOT NULL,\n    CurrencyKey int NOT NULL,\n    SalesTerritoryKey int NOT NULL,\n    SalesOrderNumber nvarchar(20) NOT NULL,\n    SalesOrderLineNumber tinyint NOT NULL,\n    RevisionNumber tinyint NOT NULL,\n    OrderQuantity smallint NOT NULL,\n    UnitPrice money NOT NULL,\n    ExtendedAmount money NOT NULL,\n    UnitPriceDiscountPct float NOT NULL,\n    DiscountAmount float NOT NULL,\n    ProductStandardCost money NOT NULL,\n    TotalProductCost money NOT NULL,\n    SalesAmount money NOT NULL,\n    TaxAmt money NOT NULL,\n    Freight money NOT NULL,\n    CarrierTrackingNumber nvarchar(25),\n    CustomerPONumber nvarchar(25)\n)\nWITH( \n HEAP, -- Cols not sorted like column store\n DISTRIBUTION = ROUND_ROBIN \n);\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "master",
+						"poolName": "Built-in"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/CREATE TABLE PARTITION')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"folder": {
+					"name": "Dedicated"
+				},
+				"content": {
+					"query": "CREATE TABLE FactInternetSales_new\nWITH\n(\n    CLUSTERED COLUMNSTORE INDEX,\n    DISTRIBUTION = HASH(ProductKey),\n    PARTITION\n    (\n        OrderDateKey RANGE RIGHT FOR VALUES\n        (\n        20000101,20010101,20020101,20030101,20040101,20050101,20060101,20070101,20080101,20090101,\n        20100101,20110101,20120101,20130101,20140101,20150101,20160101,20170101,20180101,20190101,\n        20200101,20210101,20220101,20230101,20240101,20250101,20260101,20270101,20280101,20290101\n        )\n    )\n)\nAS SELECT * FROM FactInternetSales;\n\n",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "master",
 						"poolName": "Built-in"
 					},
 					"resultLimit": 5000
@@ -232,15 +324,15 @@
 			"dependsOn": []
 		},
 		{
-			"name": "[concat(parameters('workspaceName'), '/EXTERNAL DATA SOURCE')]",
+			"name": "[concat(parameters('workspaceName'), '/RENAME DROP TABLE')]",
 			"type": "Microsoft.Synapse/workspaces/sqlscripts",
 			"apiVersion": "2019-06-01-preview",
 			"properties": {
 				"folder": {
-					"name": "Serverless"
+					"name": "Dedicated"
 				},
 				"content": {
-					"query": "CREATE DATABASE demoDB\nGO\n\nUSE demoDB\nGO\n\nCREATE MASTER KEY ENCRYPTION BY PASSWORD = 'Password01'\nGO\n\nCREATE DATABASE SCOPED CREDENTIAL myCredential\nWITH IDENTITY = 'SHARED ACCESS SIGNATURE',\nSECRET = 'sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupyx&se=2024-10-17T01:29:48Z&st=2024-10-16T17:29:48Z&spr=https&sig=ZhqOEZfBK9LyrTFj%2FPFxonE47L8a1Qw4G01fWVBqQ8s%3D'\nGO\n\nCREATE EXTERNAL DATA SOURCE myDataSource WITH(\n    LOCATION = 'https://lhadlsgen2storage.blob.core.windows.net/',\n    CREDENTIAL = myCredential\n    )\n\n",
+					"query": "RENAME OBJECT FactInternetSales TO FactInternetSales_old;\nRENAME OBJECT FactInternetSales_new TO FactInternetSales;\n\nDROP TABLE FactInternetSales_old;",
 					"metadata": {
 						"language": "sql"
 					},
@@ -686,66 +778,17 @@
 			"dependsOn": []
 		},
 		{
-			"name": "[concat(parameters('workspaceName'), '/RENAME DROP TABLE')]",
+			"name": "[concat(parameters('workspaceName'), '/SQL script 1')]",
 			"type": "Microsoft.Synapse/workspaces/sqlscripts",
 			"apiVersion": "2019-06-01-preview",
 			"properties": {
-				"folder": {
-					"name": "Dedicated"
-				},
 				"content": {
-					"query": "RENAME OBJECT FactInternetSales TO FactInternetSales_old;\nRENAME OBJECT FactInternetSales_new TO FactInternetSales;\n\nDROP TABLE FactInternetSales_old;",
+					"query": "SELECT TOP (100) [DateID]\n,[MedallionID]\n,[HackneyLicenseID]\n,[PickupTimeID]\n,[DropoffTimeID]\n,[PickupGeographyID]\n,[DropoffGeographyID]\n,[PickupLatitude]\n,[PickupLongitude]\n,[PickupLatLong]\n,[DropoffLatitude]\n,[DropoffLongitude]\n,[DropoffLatLong]\n,[PassengerCount]\n,[TripDurationSeconds]\n,[TripDistanceMiles]\n,[PaymentType]\n,[FareAmount]\n,[SurchargeAmount]\n,[TaxAmount]\n,[TipAmount]\n,[TollsAmount]\n,[TotalAmount]\n FROM [NYCTaxi].[NYCTrip]",
 					"metadata": {
 						"language": "sql"
 					},
 					"currentConnection": {
-						"databaseName": "master",
-						"poolName": "Built-in"
-					},
-					"resultLimit": 5000
-				},
-				"type": "SqlQuery"
-			},
-			"dependsOn": []
-		},
-		{
-			"name": "[concat(parameters('workspaceName'), '/CREATE TABLE FactInternetSales')]",
-			"type": "Microsoft.Synapse/workspaces/sqlscripts",
-			"apiVersion": "2019-06-01-preview",
-			"properties": {
-				"folder": {
-					"name": "Dedicated"
-				},
-				"content": {
-					"query": "CREATE TABLE FactInternetSales\n(\n    ProductKey int NOT NULL,\n    OrderDateKey int NOT NULL,\n    DueDateKey int NOT NULL,\n    ShipDateKey int NOT NULL,\n    CustomerKey int NOT NULL,\n    PromotionKey int NOT NULL,\n    CurrencyKey int NOT NULL,\n    SalesTerritoryKey int NOT NULL,\n    SalesOrderNumber nvarchar(20) NOT NULL,\n    SalesOrderLineNumber tinyint NOT NULL,\n    RevisionNumber tinyint NOT NULL,\n    OrderQuantity smallint NOT NULL,\n    UnitPrice money NOT NULL,\n    ExtendedAmount money NOT NULL,\n    UnitPriceDiscountPct float NOT NULL,\n    DiscountAmount float NOT NULL,\n    ProductStandardCost money NOT NULL,\n    TotalProductCost money NOT NULL,\n    SalesAmount money NOT NULL,\n    TaxAmt money NOT NULL,\n    Freight money NOT NULL,\n    CarrierTrackingNumber nvarchar(25),\n    CustomerPONumber nvarchar(25)\n)\nWITH( \n HEAP, -- Cols not sorted like column store\n DISTRIBUTION = ROUND_ROBIN \n);\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n",
-					"metadata": {
-						"language": "sql"
-					},
-					"currentConnection": {
-						"databaseName": "master",
-						"poolName": "Built-in"
-					},
-					"resultLimit": 5000
-				},
-				"type": "SqlQuery"
-			},
-			"dependsOn": []
-		},
-		{
-			"name": "[concat(parameters('workspaceName'), '/CREATE TABLE PARTITION')]",
-			"type": "Microsoft.Synapse/workspaces/sqlscripts",
-			"apiVersion": "2019-06-01-preview",
-			"properties": {
-				"folder": {
-					"name": "Dedicated"
-				},
-				"content": {
-					"query": "CREATE TABLE FactInternetSales_new\nWITH\n(\n    CLUSTERED COLUMNSTORE INDEX,\n    DISTRIBUTION = HASH(ProductKey),\n    PARTITION\n    (\n        OrderDateKey RANGE RIGHT FOR VALUES\n        (\n        20000101,20010101,20020101,20030101,20040101,20050101,20060101,20070101,20080101,20090101,\n        20100101,20110101,20120101,20130101,20140101,20150101,20160101,20170101,20180101,20190101,\n        20200101,20210101,20220101,20230101,20240101,20250101,20260101,20270101,20280101,20290101\n        )\n    )\n)\nAS SELECT * FROM FactInternetSales;\n\n",
-					"metadata": {
-						"language": "sql"
-					},
-					"currentConnection": {
-						"databaseName": "master",
+						"databaseName": "demoDB",
 						"poolName": "Built-in"
 					},
 					"resultLimit": 5000
