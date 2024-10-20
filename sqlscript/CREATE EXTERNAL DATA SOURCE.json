@@ -1,5 +1,5 @@
 {
-	"name": "EXTERNAL DATA SOURCE SAS",
+	"name": "CREATE EXTERNAL DATA SOURCE",
 	"properties": {
 		"folder": {
 			"name": "Serverless"
