@@ -1,11 +1,11 @@
 {
-	"name": "CREATE EXTERNAL TABLE NYCTrip",
+	"name": "CREATE EXTERNAL TABLE NYCTripSmall",
 	"properties": {
 		"folder": {
 			"name": "Serverless"
 		},
 		"content": {
-			"query": "USE demoDB\nGO\n\nCREATE SCHEMA NYCTaxi\nGO\n\nCREATE EXTERNAL TABLE NYCTaxi.NYCTrip\nWITH(\n    LOCATION = 'lh-synapse-container/NYCTrip/data',\n    DATA_SOURCE = myDataSourceDb,\n    FILE_FORMAT = parquetFileFormat\n)\nAS\nSELECT\n    TOP 100 *\nFROM\n    OPENROWSET(\n        BULK 'https://lhadlsgen2storage.dfs.core.windows.net/lh-synapse-container/Data/NYCTrip.parquet',\n        FORMAT = 'PARQUET'\n    ) AS [result]\nGO\n\nSELECT * FROM NYCTaxi.NYCTrip\n\n\n\n",
+			"query": "CREATE DATABASE demoDB\nGO\n\nUSE demoDB\nGO\n\n-----\n\nCREATE SCHEMA NYCTaxi\nGO\n\nCREATE EXTERNAL TABLE NYCTaxi.NYCTripSmall\nWITH(\n    LOCATION = 'lh-synapse-container/NYCTripSmall/data',\n    DATA_SOURCE = myDataSourceSAS,\n    FILE_FORMAT = parquetFileFormat\n)\nAS\nSELECT\n    *\nFROM\n    OPENROWSET(\n        BULK 'https://lhadlsgen2storage.dfs.core.windows.net/lh-synapse-container/Data/NYCTripSmall.parquet',\n        FORMAT = 'PARQUET'\n    ) AS [result]\nGO\n\nSELECT * FROM NYCTaxi.NYCTripSmall",
 			"metadata": {
 				"language": "sql"
 			},

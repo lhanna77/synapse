@@ -1,5 +1,5 @@
 {
-	"name": "CREATE EXTERNAL FILE FORMAT PARQUET",
+	"name": "CREATE EXTERNAL FILE FORMAT parquet",
 	"properties": {
 		"folder": {
 			"name": "Serverless"
