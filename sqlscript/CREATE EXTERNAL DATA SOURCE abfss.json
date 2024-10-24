@@ -1,6 +1,9 @@
 {
 	"name": "CREATE EXTERNAL DATA SOURCE abfss",
 	"properties": {
+		"folder": {
+			"name": "Serverless"
+		},
 		"content": {
 			"query": "IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'demoDB')\n    CREATE DATABASE demoDB\nGO\n\nUSE demoDB\nGO\n\nIF NOT EXISTS (SELECT * FROM sys.external_data_sources WHERE name = 'myDataSourceManagedABFSS') \n\tCREATE EXTERNAL DATA SOURCE [myDataSourceManagedABFSS] \n\tWITH (\n\t\tLOCATION = 'abfss://lh-synapse-container@lhadlsgen2storage.dfs.core.windows.net' \n\t)\nGO",
 			"metadata": {
