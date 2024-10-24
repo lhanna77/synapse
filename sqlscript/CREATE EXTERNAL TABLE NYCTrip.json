@@ -5,7 +5,7 @@
 			"name": "Serverless"
 		},
 		"content": {
-			"query": "IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'demoDB')\n    CREATE DATABASE demoDB\nGO\n\nUSE demoDB\nGO\n\n-----\n\nIF NOT EXISTS (SELECT * FROM sys.schemas WHERE name = 'NYCTaxi')\n    CREATE SCHEMA NYCTaxi\nGO\n\nCREATE EXTERNAL TABLE NYCTaxi.NYCTrip\nWITH(\n    LOCATION = 'lh-synapse-container/NYCTrip/data',\n    DATA_SOURCE = myDataSourceManaged,\n    FILE_FORMAT = parquetFileFormat\n)\nAS\nSELECT\n    TOP 100 *\nFROM\n    OPENROWSET(\n        BULK 'https://lhadlsgen2storage.dfs.core.windows.net/lh-synapse-container/Data/NYCTrip.parquet',\n        FORMAT = 'PARQUET'\n    ) AS [result]\nGO\n\nSELECT * FROM NYCTaxi.NYCTrip\n",
+			"query": "IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'demoDB')\n    CREATE DATABASE demoDB\nGO\n\nUSE demoDB\nGO\n\n-----\n\nIF NOT EXISTS (SELECT * FROM sys.schemas WHERE name = 'NYCTaxi')\n    CREATE SCHEMA NYCTaxi\nGO\n\n-----\n\nCREATE EXTERNAL TABLE NYCTaxi.NYCTrip\nWITH(\n    LOCATION = 'lh-synapse-container/NYCTrip/data',\n    DATA_SOURCE = myDataSourceManaged,\n    FILE_FORMAT = parquetFileFormat\n)\nAS\nSELECT\n    TOP 100 *\nFROM\n    OPENROWSET(\n        BULK 'https://lhadlsgen2storage.dfs.core.windows.net/lh-synapse-container/Data/NYCTrip.parquet',\n        FORMAT = 'PARQUET'\n    ) AS [result]\nGO\n\nSELECT * FROM NYCTaxi.NYCTrip\n",
 			"metadata": {
 				"language": "sql"
 			},
