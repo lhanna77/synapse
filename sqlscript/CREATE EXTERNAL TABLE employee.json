@@ -1,0 +1,17 @@
+{
+	"name": "CREATE EXTERNAL TABLE employee",
+	"properties": {
+		"content": {
+			"query": "CREATE EXTERNAL TABLE NYCTrip.employee (\n\t[empid] bigint,\n\t[empName] nvarchar(4000),\n\t[salary] bigint,\n\t[dept] nvarchar(4000)\n\t)\n\tWITH (\n\tLOCATION = 'Data/employee.csv',\n\tDATA_SOURCE = myDataSourceManaged,\n\tFILE_FORMAT = delimitedFileFormat\n\t)\nGO\n\n\nSELECT TOP 100 * FROM NYCTrip.employee\nGO",
+			"metadata": {
+				"language": "sql"
+			},
+			"currentConnection": {
+				"databaseName": "demoDB",
+				"poolName": "Built-in"
+			},
+			"resultLimit": 5000
+		},
+		"type": "SqlQuery"
+	}
+}

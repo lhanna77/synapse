@@ -1,0 +1,20 @@
+{
+	"name": "CREATE EXTERNAL FILE FORMAT delimited",
+	"properties": {
+		"folder": {
+			"name": "Serverless"
+		},
+		"content": {
+			"query": "IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'demoDB')\n    CREATE DATABASE demoDB\nGO\n\nUSE demoDB\nGO\n\n-- CREATE MASTER KEY ENCRYPTION BY PASSWORD = 'Password01'\n-- GO\n\nIF NOT EXISTS (SELECT * FROM sys.external_file_formats WHERE name = 'delimitedFileFormat') \n\tCREATE EXTERNAL FILE FORMAT [delimitedFileFormat] \n\tWITH ( FORMAT_TYPE = DELIMITEDTEXT ,\n\t       FORMAT_OPTIONS (\n\t\t\t FIELD_TERMINATOR = ',',\n\t\t\t FIRST_ROW = 2,\n\t\t\t USE_TYPE_DEFAULT = FALSE\n\t\t\t))\nGO",
+			"metadata": {
+				"language": "sql"
+			},
+			"currentConnection": {
+				"databaseName": "master",
+				"poolName": "Built-in"
+			},
+			"resultLimit": 5000
+		},
+		"type": "SqlQuery"
+	}
+}
