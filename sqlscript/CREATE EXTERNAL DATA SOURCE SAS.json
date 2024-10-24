@@ -5,7 +5,7 @@
 			"name": "Serverless"
 		},
 		"content": {
-			"query": "IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'demoDB')\n    CREATE DATABASE demoDB\nGO\n\nUSE demoDB\nGO\n\n-- CREATE MASTER KEY ENCRYPTION BY PASSWORD = 'Password01'\n-- GO\n\nCREATE DATABASE SCOPED CREDENTIAL myCredentialSAS\nWITH IDENTITY = 'SHARED ACCESS SIGNATURE',\nSECRET = 'sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupyx&se=2024-12-25T01:06:55Z&st=2024-10-20T16:06:55Z&spr=https&sig=MytV9E6HHchIDFYFwzJR8ZcGXb5SsE9HmKaE1qxjtwc%3D'\nGO\n\nCREATE EXTERNAL DATA SOURCE myDataSourceSAS WITH (\n    LOCATION = 'https://lhadlsgen2storage.blob.core.windows.net/',\n    CREDENTIAL = myCredentialSAS\n)\n\n",
+			"query": "IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'demoDB')\n    CREATE DATABASE demoDB\nGO\n\nUSE demoDB\nGO\n\n-- CREATE MASTER KEY ENCRYPTION BY PASSWORD = 'Password01'\n-- GO\n\nCREATE DATABASE SCOPED CREDENTIAL myCredentialSAS\nWITH IDENTITY = 'SHARED ACCESS SIGNATURE',\nSECRET = 'sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupyx&se=2024-12-25T01:06:55Z&st=2024-10-20T16:06:55Z&spr=https&sig=MytV9E6HHchIDFYFwzJR8ZcGXb5SsE9HmKaE1qxjtwc%3D'\nGO\n\nIF NOT EXISTS (SELECT * FROM sys.external_data_sources WHERE name = 'myDataSourceSAS') \n    CREATE EXTERNAL DATA SOURCE myDataSourceSAS WITH (\n        LOCATION = 'https://lhadlsgen2storage.blob.core.windows.net/',\n        CREDENTIAL = myCredentialSAS\n    )\nGO\n\n",
 			"metadata": {
 				"language": "sql"
 			},
