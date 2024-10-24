@@ -117,29 +117,6 @@
 			"dependsOn": []
 		},
 		{
-			"name": "[concat(parameters('workspaceName'), '/CREATE DATABASE SCOPED CREDENTIAL')]",
-			"type": "Microsoft.Synapse/workspaces/sqlscripts",
-			"apiVersion": "2019-06-01-preview",
-			"properties": {
-				"folder": {
-					"name": "Serverless"
-				},
-				"content": {
-					"query": "IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'demoDB')\n    CREATE DATABASE demoDB\nGO\n\nUSE demoDB\nGO\n\n-----\n\nIF NOT EXISTS (SELECT * FROM sys.schemas WHERE name = 'NYCTaxi')\n    CREATE SCHEMA NYCTaxi\nGO\n\nCREATE EXTERNAL TABLE NYCTaxi.NYCTrip\nWITH(\n    LOCATION = 'lh-synapse-container/NYCTrip/data',\n    DATA_SOURCE = myDataSourceManaged,\n    FILE_FORMAT = parquetFileFormat\n)\nAS\nSELECT\n    TOP 100 *\nFROM\n    OPENROWSET(\n        BULK 'https://lhadlsgen2storage.dfs.core.windows.net/lh-synapse-container/Data/NYCTrip.parquet',\n        FORMAT = 'PARQUET'\n    ) AS [result]\nGO\n\nSELECT * FROM NYCTaxi.NYCTrip\n",
-					"metadata": {
-						"language": "sql"
-					},
-					"currentConnection": {
-						"databaseName": "demoDB",
-						"poolName": "Built-in"
-					},
-					"resultLimit": 5000
-				},
-				"type": "SqlQuery"
-			},
-			"dependsOn": []
-		},
-		{
 			"name": "[concat(parameters('workspaceName'), '/CREATE EXTERNAL DATA SOURCE Managed')]",
 			"type": "Microsoft.Synapse/workspaces/sqlscripts",
 			"apiVersion": "2019-06-01-preview",
@@ -148,7 +125,7 @@
 					"name": "Serverless"
 				},
 				"content": {
-					"query": "IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'demoDB')\n    CREATE DATABASE demoDB\nGO\n\nUSE demoDB\nGO\n\n-- CREATE MASTER KEY ENCRYPTION BY PASSWORD = 'Password01'\n-- GO\n\nCREATE DATABASE SCOPED CREDENTIAL myCredentialManaged\nWITH IDENTITY = 'Managed Identity'\nGO\n\nCREATE EXTERNAL DATA SOURCE myDataSourceManaged WITH (\n    LOCATION = 'https://lhadlsgen2storage.blob.core.windows.net/',\n    CREDENTIAL = myCredentialManaged\n)",
+					"query": "IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'demoDB')\n    CREATE DATABASE demoDB\nGO\n\nUSE demoDB\nGO\n\n-- CREATE MASTER KEY ENCRYPTION BY PASSWORD = 'Password01'\n-- GO\n\nCREATE DATABASE SCOPED CREDENTIAL myCredentialManaged\nWITH IDENTITY = 'Managed Identity'\nGO\n\nIF NOT EXISTS (SELECT * FROM sys.external_data_sources WHERE name = 'myDataSourceManaged') \n    CREATE EXTERNAL DATA SOURCE myDataSourceManaged WITH (\n        LOCATION = 'https://lhadlsgen2storage.blob.core.windows.net/',\n        CREDENTIAL = myCredentialManaged\n    )\nGO",
 					"metadata": {
 						"language": "sql"
 					},
@@ -171,7 +148,7 @@
 					"name": "Serverless"
 				},
 				"content": {
-					"query": "IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'demoDB')\n    CREATE DATABASE demoDB\nGO\n\nUSE demoDB\nGO\n\n-- CREATE MASTER KEY ENCRYPTION BY PASSWORD = 'Password01'\n-- GO\n\nCREATE DATABASE SCOPED CREDENTIAL myCredentialSAS\nWITH IDENTITY = 'SHARED ACCESS SIGNATURE',\nSECRET = 'sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupyx&se=2024-12-25T01:06:55Z&st=2024-10-20T16:06:55Z&spr=https&sig=MytV9E6HHchIDFYFwzJR8ZcGXb5SsE9HmKaE1qxjtwc%3D'\nGO\n\nCREATE EXTERNAL DATA SOURCE myDataSourceSAS WITH (\n    LOCATION = 'https://lhadlsgen2storage.blob.core.windows.net/',\n    CREDENTIAL = myCredentialSAS\n)\n\n",
+					"query": "IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'demoDB')\n    CREATE DATABASE demoDB\nGO\n\nUSE demoDB\nGO\n\n-- CREATE MASTER KEY ENCRYPTION BY PASSWORD = 'Password01'\n-- GO\n\nCREATE DATABASE SCOPED CREDENTIAL myCredentialSAS\nWITH IDENTITY = 'SHARED ACCESS SIGNATURE',\nSECRET = 'sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupyx&se=2024-12-25T01:06:55Z&st=2024-10-20T16:06:55Z&spr=https&sig=MytV9E6HHchIDFYFwzJR8ZcGXb5SsE9HmKaE1qxjtwc%3D'\nGO\n\nIF NOT EXISTS (SELECT * FROM sys.external_data_sources WHERE name = 'myDataSourceSAS') \n    CREATE EXTERNAL DATA SOURCE myDataSourceSAS WITH (\n        LOCATION = 'https://lhadlsgen2storage.blob.core.windows.net/',\n        CREDENTIAL = myCredentialSAS\n    )\nGO\n\n",
 					"metadata": {
 						"language": "sql"
 					},
@@ -194,12 +171,35 @@
 					"name": "Serverless"
 				},
 				"content": {
-					"query": "IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'demoDB')\n    CREATE DATABASE demoDB\nGO\n\nUSE demoDB\nGO\n\n-- CREATE MASTER KEY ENCRYPTION BY PASSWORD = 'Password01'\n-- GO\n\nCREATE EXTERNAL FILE FORMAT parquetFileFormat\nWITH\n(  \n    FORMAT_TYPE = PARQUET,\n    DATA_COMPRESSION = 'org.apache.hadoop.io.compress.SnappyCodec'\n)",
+					"query": "IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'demoDB')\n    CREATE DATABASE demoDB\nGO\n\nUSE demoDB\nGO\n\n-- CREATE MASTER KEY ENCRYPTION BY PASSWORD = 'Password01'\n-- GO\n\nIF NOT EXISTS (SELECT * FROM sys.external_file_formats WHERE name = 'parquetFileFormat') \n    CREATE EXTERNAL FILE FORMAT parquetFileFormat\n    WITH\n    (  \n        FORMAT_TYPE = PARQUET,\n        DATA_COMPRESSION = 'org.apache.hadoop.io.compress.SnappyCodec'\n    )\n\nGO",
 					"metadata": {
 						"language": "sql"
 					},
 					"currentConnection": {
-						"databaseName": "master",
+						"databaseName": "demoDB",
+						"poolName": "Built-in"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/CREATE EXTERNAL TABLE NYCTrip')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"folder": {
+					"name": "Serverless"
+				},
+				"content": {
+					"query": "IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'demoDB')\n    CREATE DATABASE demoDB\nGO\n\nUSE demoDB\nGO\n\n-----\n\nIF NOT EXISTS (SELECT * FROM sys.schemas WHERE name = 'NYCTaxi')\n    CREATE SCHEMA NYCTaxi\nGO\n\nCREATE EXTERNAL TABLE NYCTaxi.NYCTrip\nWITH(\n    LOCATION = 'lh-synapse-container/NYCTrip/data',\n    DATA_SOURCE = myDataSourceManaged,\n    FILE_FORMAT = parquetFileFormat\n)\nAS\nSELECT\n    TOP 100 *\nFROM\n    OPENROWSET(\n        BULK 'https://lhadlsgen2storage.dfs.core.windows.net/lh-synapse-container/Data/NYCTrip.parquet',\n        FORMAT = 'PARQUET'\n    ) AS [result]\nGO\n\nSELECT * FROM NYCTaxi.NYCTrip\n",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "demoDB",
 						"poolName": "Built-in"
 					},
 					"resultLimit": 5000
@@ -218,6 +218,29 @@
 				},
 				"content": {
 					"query": "IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'demoDB')\n    CREATE DATABASE demoDB\nGO\n\nUSE demoDB\nGO\n\n-----\n\nIF NOT EXISTS (SELECT * FROM sys.schemas WHERE name = 'NYCTaxi')\n    CREATE SCHEMA NYCTaxi\nGO\n\nCREATE EXTERNAL TABLE NYCTaxi.NYCTripSmall\nWITH(\n    LOCATION = 'lh-synapse-container/NYCTripSmall/data',\n    DATA_SOURCE = myDataSourceSAS,\n    FILE_FORMAT = parquetFileFormat\n)\nAS\nSELECT\n    *\nFROM\n    OPENROWSET(\n        BULK 'https://lhadlsgen2storage.dfs.core.windows.net/lh-synapse-container/Data/NYCTripSmall.parquet',\n        FORMAT = 'PARQUET'\n    ) AS [result]\nGO\n\nSELECT * FROM NYCTaxi.NYCTripSmall",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "demoDB",
+						"poolName": "Built-in"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/CREATE EXTERNAL TABLE schema')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"folder": {
+					"name": "Serverless"
+				},
+				"content": {
+					"query": "IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'demoDB')\n    CREATE DATABASE demoDB\nGO\n\nUSE demoDB\nGO\n\n-----\n\nIF NOT EXISTS (SELECT * FROM sys.schemas WHERE name = 'NYCTaxi')\n    CREATE SCHEMA NYCTaxi\nGO\n\n-- Create External table --\n\nCREATE EXTERNAL TABLE dbo.ext_table_native (\n\t[DateID] int,\n\t[MedallionID] int,\n\t[HackneyLicenseID] int,\n\t[PickupTimeID] int,\n\t[DropoffTimeID] int,\n\t[PickupGeographyID] int,\n\t[DropoffGeographyID] int,\n\t[PickupLatitude] float,\n\t[PickupLongitude] float,\n\t[PickupLatLong] nvarchar(4000),\n\t[DropoffLatitude] float,\n\t[DropoffLongitude] float,\n\t[DropoffLatLong] nvarchar(4000),\n\t[PassengerCount] int,\n\t[TripDurationSeconds] int,\n\t[TripDistanceMiles] float,\n\t[PaymentType] nvarchar(4000),\n\t[FareAmount] numeric(19,4),\n\t[SurchargeAmount] numeric(19,4),\n\t[TaxAmount] numeric(19,4),\n\t[TipAmount] numeric(19,4),\n\t[TollsAmount] numeric(19,4),\n\t[TotalAmount] numeric(19,4)\n\t)\n\tWITH (\n\tLOCATION = '/Data/NYCTripSmall.parquet',\n\tDATA_SOURCE = myDataSourceManaged,\n\tFILE_FORMAT = parquetFileFormat\n\t)\nGO\n\n\nSELECT * FROM dbo.ext_table_native\n",
 					"metadata": {
 						"language": "sql"
 					},
@@ -778,17 +801,63 @@
 			"dependsOn": []
 		},
 		{
-			"name": "[concat(parameters('workspaceName'), '/SQL script 1')]",
+			"name": "[concat(parameters('workspaceName'), '/CREATE EXTERNAL DATA SOURCE abfss')]",
 			"type": "Microsoft.Synapse/workspaces/sqlscripts",
 			"apiVersion": "2019-06-01-preview",
 			"properties": {
+				"folder": {
+					"name": "Serverless"
+				},
 				"content": {
-					"query": "SELECT TOP (100) [DateID]\n,[MedallionID]\n,[HackneyLicenseID]\n,[PickupTimeID]\n,[DropoffTimeID]\n,[PickupGeographyID]\n,[DropoffGeographyID]\n,[PickupLatitude]\n,[PickupLongitude]\n,[PickupLatLong]\n,[DropoffLatitude]\n,[DropoffLongitude]\n,[DropoffLatLong]\n,[PassengerCount]\n,[TripDurationSeconds]\n,[TripDistanceMiles]\n,[PaymentType]\n,[FareAmount]\n,[SurchargeAmount]\n,[TaxAmount]\n,[TipAmount]\n,[TollsAmount]\n,[TotalAmount]\n FROM [NYCTaxi].[NYCTrip]",
+					"query": "IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'demoDB')\n    CREATE DATABASE demoDB\nGO\n\nUSE demoDB\nGO\n\nIF NOT EXISTS (SELECT * FROM sys.external_data_sources WHERE name = 'myDataSourceManagedABFSS') \n\tCREATE EXTERNAL DATA SOURCE [myDataSourceManagedABFSS] \n\tWITH (\n\t\tLOCATION = 'abfss://lh-synapse-container@lhadlsgen2storage.dfs.core.windows.net' \n\t)\nGO",
 					"metadata": {
 						"language": "sql"
 					},
 					"currentConnection": {
 						"databaseName": "demoDB",
+						"poolName": "Built-in"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/CREATE EXTERNAL TABLE employee')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"content": {
+					"query": "CREATE EXTERNAL TABLE NYCTrip.employee (\n\t[empid] bigint,\n\t[empName] nvarchar(4000),\n\t[salary] bigint,\n\t[dept] nvarchar(4000)\n\t)\n\tWITH (\n\tLOCATION = 'Data/employee.csv',\n\tDATA_SOURCE = myDataSourceManagedABFSS,\n\tFILE_FORMAT = delimitedFileFormat\n\t)\nGO\n\n\nSELECT TOP 100 * FROM NYCTrip.employee\nGO",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "demoDB",
+						"poolName": "Built-in"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/CREATE EXTERNAL FILE FORMAT delimited')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"folder": {
+					"name": "Serverless"
+				},
+				"content": {
+					"query": "IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'demoDB')\n    CREATE DATABASE demoDB\nGO\n\nUSE demoDB\nGO\n\n-- CREATE MASTER KEY ENCRYPTION BY PASSWORD = 'Password01'\n-- GO\n\nIF NOT EXISTS (SELECT * FROM sys.external_file_formats WHERE name = 'delimitedFileFormat') \n\tCREATE EXTERNAL FILE FORMAT [delimitedFileFormat] \n\tWITH ( FORMAT_TYPE = DELIMITEDTEXT ,\n\t       FORMAT_OPTIONS (\n\t\t\t FIELD_TERMINATOR = ',',\n\t\t\t FIRST_ROW = 2,\n\t\t\t USE_TYPE_DEFAULT = FALSE\n\t\t\t))\nGO",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "master",
 						"poolName": "Built-in"
 					},
 					"resultLimit": 5000
