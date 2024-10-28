@@ -1,0 +1,20 @@
+{
+	"name": "CREATE TABLE temp",
+	"properties": {
+		"folder": {
+			"name": "Serverless"
+		},
+		"content": {
+			"query": "IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'demoDB')\n    CREATE DATABASE demoDB\nGO\n\nUSE demoDB\nGO\n\n-----\n\ncreate table #table_temp\n(\nid int,\nname nvarchar(30)\n)\n-- with\n-- (\n-- distribution = hash(id),\n-- clustered columnstore index\n-- )\n\ninsert into #table_temp values(1,'Sophie')\ninsert into #table_temp values(2,'Tom')\n\n\nselect * from #table_temp\n\nselect * from tempdb.#table_temp\n\ndrop table #table_temp\n",
+			"metadata": {
+				"language": "sql"
+			},
+			"currentConnection": {
+				"databaseName": "demoDB",
+				"poolName": "Built-in"
+			},
+			"resultLimit": 5000
+		},
+		"type": "SqlQuery"
+	}
+}
