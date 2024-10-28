@@ -1,11 +1,11 @@
 {
-	"name": "CREATE TABLE temp",
+	"name": "CREATE TABLE TEMP",
 	"properties": {
 		"folder": {
 			"name": "Serverless"
 		},
 		"content": {
-			"query": "IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'demoDB')\n    CREATE DATABASE demoDB\nGO\n\nUSE demoDB\nGO\n\n-----\n\ncreate table #table_temp\n(\nid int,\nname nvarchar(30)\n)\n-- with\n-- (\n-- distribution = hash(id),\n-- clustered columnstore index\n-- )\n\ninsert into #table_temp values(1,'Sophie')\ninsert into #table_temp values(2,'Tom')\n\n\nselect * from #table_temp\n\nselect * from tempdb.#table_temp\n\ndrop table #table_temp\n",
+			"query": "IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'demoDB')\n    CREATE DATABASE demoDB\nGO\n\nUSE demoDB\nGO\n\n-----\n\nCREATE TABLE #table_temp\n(\nid int,\nname nvarchar(30)\n)\n-- with\n-- (\n-- distribution = hash(id),\n-- clustered columnstore index\n-- )\n\ninsert into #table_temp values(1,'Sophie')\ninsert into #table_temp values(2,'Tom')\n\n\nselect * from #table_temp\n\nselect * from tempdb.#table_temp\n\ndrop table #table_temp",
 			"metadata": {
 				"language": "sql"
 			},
