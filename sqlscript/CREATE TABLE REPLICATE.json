@@ -1,0 +1,20 @@
+{
+	"name": "CREATE TABLE REPLICATE",
+	"properties": {
+		"folder": {
+			"name": "Dedicated"
+		},
+		"content": {
+			"query": "CREATE TABLE dbo.employees_REPLICATE\nWITH\n  (\n    HEAP,  \n    DISTRIBUTION = REPLICATE  \n  )  \nAS SELECT * FROM dbo.employees\nOPTION  (LABEL  = 'CTAS : employees_REPLICATE')\n\nselect * from dbo.employees_REPLICATE\n\n\n-- Switch table names\nRENAME OBJECT dbo.employees to employees_old;\nRENAME OBJECT dbo.employees_REPLICATE TO employees;\n\nDROP TABLE dbo.employees_old;\n\nSELECT * FROM employees\n",
+			"metadata": {
+				"language": "sql"
+			},
+			"currentConnection": {
+				"databaseName": "master",
+				"poolName": "Built-in"
+			},
+			"resultLimit": 5000
+		},
+		"type": "SqlQuery"
+	}
+}
