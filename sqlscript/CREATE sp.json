@@ -1,0 +1,20 @@
+{
+	"name": "CREATE sp",
+	"properties": {
+		"folder": {
+			"name": "Dedicated"
+		},
+		"content": {
+			"query": "CREATE PROCEDURE usp_special_orders_by_year @order_year INT\nAS\nBEGIN\n\n -- Drop the table if it already exists\n IF EXISTS (\n                SELECT * FROM sys.external_tables\n                WHERE name = 'SpecialOrders'\n            )\n        DROP EXTERNAL TABLE SpecialOrders\n\n -- Create external table with special orders\n -- from the specified year\n CREATE EXTERNAL TABLE SpecialOrders\n  WITH (\n   LOCATION = 'special_orders/',\n   DATA_SOURCE = files,\n   FILE_FORMAT = ParquetFormat\n  )\n AS\n SELECT OrderID, CustomerName, OrderTotal\n FROM\n  OPENROWSET(\n   BULK 'sales_orders/*.csv',\n   DATA_SOURCE = 'files',\n   FORMAT = 'CSV',\n   PARSER_VERSION = '2.0',\n   HEADER_ROW = TRUE\n  ) AS source_data\n WHERE OrderType = 'Special Order'\n AND YEAR(OrderDate) = @order_year\nEND",
+			"metadata": {
+				"language": "sql"
+			},
+			"currentConnection": {
+				"databaseName": "master",
+				"poolName": "Built-in"
+			},
+			"resultLimit": 5000
+		},
+		"type": "SqlQuery"
+	}
+}
