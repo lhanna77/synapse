@@ -5,12 +5,12 @@
 			"name": "Dedicated"
 		},
 		"content": {
-			"query": "CREATE PROCEDURE usp_special_orders_by_year @order_year INT\nAS\nBEGIN\n\n -- Drop the table if it already exists\n IF EXISTS (\n                SELECT * FROM sys.external_tables\n                WHERE name = 'SpecialOrders'\n            )\n        DROP EXTERNAL TABLE SpecialOrders\n\n -- Create external table with special orders\n -- from the specified year\n CREATE EXTERNAL TABLE SpecialOrders\n  WITH (\n   LOCATION = 'special_orders/',\n   DATA_SOURCE = files,\n   FILE_FORMAT = ParquetFormat\n  )\n AS\n SELECT OrderID, CustomerName, OrderTotal\n FROM\n  OPENROWSET(\n   BULK 'sales_orders/*.csv',\n   DATA_SOURCE = 'files',\n   FORMAT = 'CSV',\n   PARSER_VERSION = '2.0',\n   HEADER_ROW = TRUE\n  ) AS source_data\n WHERE OrderType = 'Special Order'\n AND YEAR(OrderDate) = @order_year\nEND",
+			"query": "IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'demoDB')\n    CREATE DATABASE demoDB\nGO\n\nUSE demoDB\nGO\n\n-----\n\nIF EXISTS ( SELECT type_desc, type FROM sys.procedures WHERE NAME = 'usp_special_orders_by_year' AND type = 'P')\n    DROP PROCEDURE NYCTaxi.usp_special_orders_by_year\nGO\n\nCREATE PROCEDURE NYCTaxi.usp_special_orders_by_year @order_year INT\nAS\nBEGIN\n\n    -- Drop the table if it already exists\n    IF EXISTS (SELECT * FROM sys.external_tables WHERE name = 'NYCTripSmall_year' )\n        DROP EXTERNAL TABLE NYCTripSmall_year\n\n    -----\n\n    CREATE EXTERNAL TABLE NYCTaxi.NYCTripSmall_year\n    WITH(\n        LOCATION = 'lh-synapse-container/NYCTripSmall/Data/sp/csv',\n        DATA_SOURCE = myDataSourceSAS,\n        FILE_FORMAT = parquetFileFormat\n    )\n    AS\n    SELECT lpep_pickup_datetime, total_amount\n    FROM\n        OPENROWSET(\n            BULK 'https://lhadlsgen2storage.dfs.core.windows.net/lh-synapse-container/Data/NYCTripSmall.parquet',\n            FORMAT = 'PARQUET'\n    ) AS source_data\n    WHERE YEAR(lpep_pickup_datetime) = @order_year\n\nEND;",
 			"metadata": {
 				"language": "sql"
 			},
 			"currentConnection": {
-				"databaseName": "master",
+				"databaseName": "demoDB",
 				"poolName": "Built-in"
 			},
 			"resultLimit": 5000
