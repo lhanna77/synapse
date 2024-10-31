@@ -13,7 +13,7 @@
 				"spark.dynamicAllocation.enabled": "false",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "615a8e90-e77a-40e9-99ca-27d301557c0f"
+				"spark.autotune.trackingId": "9ee5459a-fa8d-4d4d-9758-1a1832ae8225"
 			}
 		},
 		"metadata": {
@@ -133,28 +133,6 @@
 				},
 				"source": [
 					"demo_df.createTempView('temp_view')"
-				],
-				"execution_count": null
-			},
-			{
-				"cell_type": "code",
-				"metadata": {
-					"jupyter": {
-						"source_hidden": false,
-						"outputs_hidden": false
-					},
-					"nteract": {
-						"transient": {
-							"deleting": false
-						}
-					},
-					"microsoft": {
-						"language": "sparksql"
-					}
-				},
-				"source": [
-					"%%sql\r\n",
-					"SHOW TABLES"
 				],
 				"execution_count": null
 			},
