@@ -13,7 +13,7 @@
 				"spark.dynamicAllocation.enabled": "false",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "9ee5459a-fa8d-4d4d-9758-1a1832ae8225"
+				"spark.autotune.trackingId": "e3cbea47-b594-4fbd-86bf-a19dbc478588"
 			}
 		},
 		"metadata": {
@@ -211,7 +211,7 @@
 				"source": [
 					"# Create a csv file\r\n",
 					"\r\n",
-					"demo_df.write.csv(path='abfss://synapsecontainer@gen2storageaccount267.dfs.core.windows.net/data1/', mode='overwrite')"
+					"demo_df.write.csv(path='abfss://lh-synapse-container@lhadlsgen2storage.dfs.core.windows.net/nb/', mode='overwrite')"
 				],
 				"execution_count": 14
 			},
@@ -231,7 +231,7 @@
 				"source": [
 					"# Create a parquet file\r\n",
 					"\r\n",
-					"demo_df.write.parquet(path='abfss://synapsecontainer@gen2storageaccount267.dfs.core.windows.net/data1/', mode='overwrite')"
+					"demo_df.write.parquet(path='abfss://lh-synapse-container@lhadlsgen2storage.dfs.core.windows.net/nb/', mode='overwrite')"
 				],
 				"execution_count": 15
 			}
