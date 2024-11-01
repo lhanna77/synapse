@@ -17,7 +17,7 @@
 				"spark.dynamicAllocation.enabled": "false",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "24eae1b9-ea71-416b-95c0-57b48ae950ee"
+				"spark.autotune.trackingId": "d99f06c0-978d-471c-b11c-b1c4dd63ac32"
 			}
 		},
 		"metadata": {
@@ -86,7 +86,8 @@
 					}
 				},
 				"source": [
-					"import pandas as pd"
+					"import pandas as pd\r\n",
+					"import fsspec"
 				],
 				"execution_count": 1
 			},
@@ -112,26 +113,6 @@
 					"input_file_path = \"/input/employee_data.csv\"  # Make sure to include the leading slash"
 				],
 				"execution_count": 22
-			},
-			{
-				"cell_type": "code",
-				"metadata": {
-					"jupyter": {
-						"source_hidden": false,
-						"outputs_hidden": false
-					},
-					"nteract": {
-						"transient": {
-							"deleting": false
-						}
-					}
-				},
-				"source": [
-					"df={\"account_name\": account_name, \r\n",
-					"    \"linked_service\": linked_service_name}\r\n",
-					"df"
-				],
-				"execution_count": 23
 			},
 			{
 				"cell_type": "code",
@@ -212,6 +193,80 @@
 					}
 				},
 				"source": [
+					"<mark>**Part 2.1: Read/Write data using secondary ADLS account (sas token) & fsspec**</mark>"
+				]
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"sas_key = TokenLibrary.getConnectionString('AzureDataLakeGen2Storage')\r\n",
+					"fsspec_handle_input = fsspec.open('abfs://main-container/input/employee_data.csv', account_name = storage_account_name, sas_token = sas_key)\r\n",
+					"fsspec_handle_output = fsspec.open('abfs://main-container/output/emp_names4.csv', account_name = storage_account_name, sas_token = sas_key)"
+				],
+				"execution_count": null
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"with fsspec_handle_output.open() as f:\r\n",
+					"    data.to_csv(f)"
+				],
+				"execution_count": null
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"# Read data file\r\n",
+					"with fsspec_handle_input.open() as f:\r\n",
+					"    df = pd.read_csv(f)\r\n",
+					"\r\n",
+					"print(df)"
+				],
+				"execution_count": null
+			},
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
 					"<mark>**Part 2: Read/Write data using secondary ADLS account (sas token)**</mark>"
 				]
 			},
@@ -230,7 +285,9 @@
 				},
 				"source": [
 					"# Define the storage account details\r\n",
-					"sas_token = 'sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupyx&se=2024-12-01T23:37:33Z&st=2024-11-01T15:37:33Z&spr=https&sig=Tr0FuykHeg%2F7MsDNxN24p33m%2F2jDf%2FXQ6ZXS4gMA3xE%3D'"
+					"sas_token = 'sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupyx&se=2024-12-01T23:37:33Z&st=2024-11-01T15:37:33Z&spr=https&sig=Tr0FuykHeg%2F7MsDNxN24p33m%2F2jDf%2FXQ6ZXS4gMA3xE%3D'\r\n",
+					"\r\n",
+					""
 				],
 				"execution_count": 31
 			},
