@@ -17,7 +17,7 @@
 				"spark.dynamicAllocation.enabled": "false",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "8e0536d4-2b0b-4251-9fde-82a23471f378"
+				"spark.autotune.trackingId": "24eae1b9-ea71-416b-95c0-57b48ae950ee"
 			}
 		},
 		"metadata": {
@@ -106,12 +106,32 @@
 				"source": [
 					"# Define the storage account details\r\n",
 					"\r\n",
-					"account_name = \"lhadlsgen2storagesec\"\r\n",
+					"storage_account_name = \"lhadlsgen2storagesec\"\r\n",
 					"file_system_name = \"main-container\"\r\n",
 					"linked_service_name = \"AzureDataLakeGen2Storage\"\r\n",
-					"input_file_path = \"/nb/input/employee_data.csv\"  # Make sure to include the leading slash"
+					"input_file_path = \"/input/employee_data.csv\"  # Make sure to include the leading slash"
 				],
-				"execution_count": null
+				"execution_count": 22
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"df={\"account_name\": account_name, \r\n",
+					"    \"linked_service\": linked_service_name}\r\n",
+					"df"
+				],
+				"execution_count": 23
 			},
 			{
 				"cell_type": "code",
@@ -133,11 +153,11 @@
 					"# Read data file\r\n",
 					"df = pd.read_csv(\r\n",
 					"    f\"{storage_connection}{input_file_path}\",\r\n",
-					"    storage_options={\"account_name\": account_name, \"linked_service\": linked_service_name},\r\n",
+					"    storage_options={\"linked_service\": linked_service_name}\r\n",
 					")\r\n",
 					"print(df)"
 				],
-				"execution_count": null
+				"execution_count": 27
 			},
 			{
 				"cell_type": "code",
@@ -155,7 +175,7 @@
 				"source": [
 					"output_file_path = \"/output/emp_names.csv\"  # Make sure to include the leading slash"
 				],
-				"execution_count": 4
+				"execution_count": 28
 			},
 			{
 				"cell_type": "code",
@@ -176,11 +196,11 @@
 					"data = pd.DataFrame({'Name':['Anna', 'Jack', 'Emma', 'Luke'], 'ID':[20, 21, 19, 18]})\r\n",
 					"data.to_csv(\r\n",
 					"    f\"{storage_connection}{output_file_path}\",\r\n",
-					"    storage_options={\"account_name\": account_name, \"linked_service\": linked_service_name},\r\n",
+					"    storage_options={\"linked_service\": linked_service_name},\r\n",
 					"    index=False,\r\n",
 					")"
 				],
-				"execution_count": 5
+				"execution_count": 30
 			},
 			{
 				"cell_type": "markdown",
@@ -210,9 +230,9 @@
 				},
 				"source": [
 					"# Define the storage account details\r\n",
-					"sas_token = 'sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupyx&se=2024-01-11T08:05:15Z&st=2024-01-11T00:05:15Z&spr=https&sig=J9SquQkC2v0jPHhYKpoAnF%2FV7z2j6e%2FPbQiIpElp4Sc%3D'"
+					"sas_token = 'sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupyx&se=2024-12-01T23:37:33Z&st=2024-11-01T15:37:33Z&spr=https&sig=Tr0FuykHeg%2F7MsDNxN24p33m%2F2jDf%2FXQ6ZXS4gMA3xE%3D'"
 				],
-				"execution_count": 7
+				"execution_count": 31
 			},
 			{
 				"cell_type": "code",
@@ -233,12 +253,12 @@
 					"\r\n",
 					"# Read data file\r\n",
 					"df = pd.read_csv(\r\n",
-					"    f\"{storage_connection}{file_path}\",\r\n",
-					"    storage_options={'account_name': account_name, 'sas_token': sas_token},\r\n",
+					"    f\"{storage_connection}{input_file_path}\",\r\n",
+					"    storage_options={'sas_token': sas_token},\r\n",
 					")\r\n",
 					"print(df)"
 				],
-				"execution_count": 8
+				"execution_count": 34
 			},
 			{
 				"cell_type": "code",
@@ -256,7 +276,7 @@
 				"source": [
 					"output_file_path = \"/output/emp_names2.csv\"  # Make sure to include the leading slash"
 				],
-				"execution_count": 9
+				"execution_count": 35
 			},
 			{
 				"cell_type": "code",
@@ -276,11 +296,11 @@
 					"data = pd.DataFrame({'Name':['Anna', 'Jack', 'Emma', 'Luke'], 'ID':[20, 21, 19, 18]})\r\n",
 					"data.to_csv(\r\n",
 					"    f\"{storage_connection}{output_file_path}\",\r\n",
-					"    storage_options={\"account_name\": account_name, 'sas_token': sas_token},\r\n",
+					"    storage_options={'sas_token': sas_token},\r\n",
 					"    index=False,\r\n",
 					")"
 				],
-				"execution_count": 10
+				"execution_count": 37
 			},
 			{
 				"cell_type": "markdown",
@@ -310,10 +330,10 @@
 				},
 				"source": [
 					"# Define the storage account details\r\n",
-					"connection_string = 'BlobEndpoint=https://secondarygen2storage267.blob.core.windows.net/;QueueEndpoint=https://secondarygen2storage267.queue.core.windows.net/;FileEndpoint=https://secondarygen2storage267.file.core.windows.net/;TableEndpoint=https://secondarygen2storage267.table.core.windows.net/;SharedAccessSignature=sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupyx&se=2024-01-11T08:13:48Z&st=2024-01-11T00:13:48Z&spr=https&sig=NXsxG4XSGKdq2bfJCoa5xcG%2FFBpkTyKG1XZR72h%2BlCM%3D'\r\n",
+					"connection_string = 'BlobEndpoint=https://lhadlsgen2storagesec.blob.core.windows.net/;QueueEndpoint=https://lhadlsgen2storagesec.queue.core.windows.net/;FileEndpoint=https://lhadlsgen2storagesec.file.core.windows.net/;TableEndpoint=https://lhadlsgen2storagesec.table.core.windows.net/;SharedAccessSignature=sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupyx&se=2024-12-01T23:37:33Z&st=2024-11-01T15:37:33Z&spr=https&sig=Tr0FuykHeg%2F7MsDNxN24p33m%2F2jDf%2FXQ6ZXS4gMA3xE%3D'\r\n",
 					""
 				],
-				"execution_count": 12
+				"execution_count": 38
 			},
 			{
 				"cell_type": "code",
@@ -335,11 +355,11 @@
 					"# Read data file\r\n",
 					"df = pd.read_csv(\r\n",
 					"    f\"{storage_connection}{input_file_path}\",\r\n",
-					"    storage_options={'account_name': account_name, 'connection_string': connection_string},\r\n",
+					"    storage_options={'connection_string': connection_string},\r\n",
 					")\r\n",
 					"print(df)"
 				],
-				"execution_count": 13
+				"execution_count": 40
 			},
 			{
 				"cell_type": "code",
@@ -357,7 +377,7 @@
 				"source": [
 					"output_file_path = \"/output/emp_names3.csv\"  # Make sure to include the leading slash"
 				],
-				"execution_count": 14
+				"execution_count": 41
 			},
 			{
 				"cell_type": "code",
@@ -377,11 +397,11 @@
 					"data = pd.DataFrame({'Name':['Anna', 'Jack', 'Emma', 'Luke'], 'ID':[20, 21, 19, 18]})\r\n",
 					"data.to_csv(\r\n",
 					"    f\"{storage_connection}{output_file_path}\",\r\n",
-					"    storage_options={\"account_name\": account_name, 'connection_string': connection_string},\r\n",
+					"    storage_options={'connection_string': connection_string},\r\n",
 					"    index=False,\r\n",
 					")"
 				],
-				"execution_count": 15
+				"execution_count": 42
 			}
 		]
 	}
