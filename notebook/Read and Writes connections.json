@@ -17,7 +17,7 @@
 				"spark.dynamicAllocation.enabled": "false",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "d99f06c0-978d-471c-b11c-b1c4dd63ac32"
+				"spark.autotune.trackingId": "736e5943-720b-4b29-9f57-c292d3207aec"
 			}
 		},
 		"metadata": {
@@ -212,7 +212,7 @@
 				"source": [
 					"sas_key = TokenLibrary.getConnectionString('AzureDataLakeGen2Storage')\r\n",
 					"fsspec_handle_input = fsspec.open('abfs://main-container/input/employee_data.csv', account_name = storage_account_name, sas_token = sas_key)\r\n",
-					"fsspec_handle_output = fsspec.open('abfs://main-container/output/emp_names4.csv', account_name = storage_account_name, sas_token = sas_key)"
+					"fsspec_handle_output = fsspec.open('abfs://main-container/output/emp_names4.csv', account_name = storage_account_name, sas_token = sas_key, mode='wt')"
 				],
 				"execution_count": null
 			},
