@@ -1,0 +1,450 @@
+{
+	"name": "Widget",
+	"properties": {
+		"nbformat": 4,
+		"nbformat_minor": 2,
+		"sessionProperties": {
+			"driverMemory": "28g",
+			"driverCores": 4,
+			"executorMemory": "28g",
+			"executorCores": 4,
+			"numExecutors": 2,
+			"conf": {
+				"spark.dynamicAllocation.enabled": "false",
+				"spark.dynamicAllocation.minExecutors": "2",
+				"spark.dynamicAllocation.maxExecutors": "2",
+				"spark.autotune.trackingId": "5c625ff6-e38d-4b1a-b9d4-bfab07d7cc5f"
+			}
+		},
+		"metadata": {
+			"saveOutput": true,
+			"enableDebugMode": false,
+			"kernelspec": {
+				"name": "synapse_pyspark",
+				"display_name": "Synapse PySpark"
+			},
+			"language_info": {
+				"name": "python"
+			},
+			"sessionKeepAliveTimeout": 30
+		},
+		"cells": [
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"https://ipywidgets.readthedocs.io/en/8.1.5/examples/Widget%20Basics.html"
+				]
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"import ipywidgets as widgets"
+				],
+				"execution_count": 2
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"widgets.IntSlider()"
+				],
+				"execution_count": 3
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"from IPython.display import display\r\n",
+					"w = widgets.IntSlider()\r\n",
+					"display(w)"
+				],
+				"execution_count": 4
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"display(w)\r\n",
+					"display(w)"
+				],
+				"execution_count": 6
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"w.close()"
+				],
+				"execution_count": 7
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"display(w)"
+				],
+				"execution_count": 8
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"w.keys"
+				],
+				"execution_count": 9
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"widgets.Text(value='Hello World!', disabled=True)"
+				],
+				"execution_count": 10
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"a = widgets.FloatText()\r\n",
+					"b = widgets.FloatSlider()\r\n",
+					"display(a,b)\r\n",
+					"\r\n",
+					"mylink = widgets.jslink((a, 'value'), (b, 'value'))"
+				],
+				"execution_count": 11
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"widgets.IntSlider(\r\n",
+					"    value=7,\r\n",
+					"    min=0,\r\n",
+					"    max=10,\r\n",
+					"    step=1,\r\n",
+					"    description='Test:',\r\n",
+					"    disabled=False,\r\n",
+					"    continuous_update=False,\r\n",
+					"    orientation='horizontal',\r\n",
+					"    readout=True,\r\n",
+					"    readout_format='d'\r\n",
+					")"
+				],
+				"execution_count": 12
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"widgets.FloatSlider(\r\n",
+					"    value=7.5,\r\n",
+					"    min=0,\r\n",
+					"    max=10.0,\r\n",
+					"    step=0.1,\r\n",
+					"    description='Test:',\r\n",
+					"    disabled=False,\r\n",
+					"    continuous_update=False,\r\n",
+					"    orientation='horizontal',\r\n",
+					"    readout=True,\r\n",
+					"    readout_format='.1f',\r\n",
+					")"
+				],
+				"execution_count": 13
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"widgets.FloatSlider(\r\n",
+					"    value=7.5,\r\n",
+					"    min=0,\r\n",
+					"    max=10.0,\r\n",
+					"    step=0.1,\r\n",
+					"    description='Test:',\r\n",
+					"    disabled=False,\r\n",
+					"    continuous_update=False,\r\n",
+					"    orientation='vertical',\r\n",
+					"    readout=True,\r\n",
+					"    readout_format='.1f',\r\n",
+					")"
+				],
+				"execution_count": 14
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"widgets.IntProgress(\r\n",
+					"    value=7,\r\n",
+					"    min=0,\r\n",
+					"    max=10,\r\n",
+					"    description='Loading:',\r\n",
+					"    bar_style='', # 'success', 'info', 'warning', 'danger' or ''\r\n",
+					"    style={'bar_color': 'maroon'},\r\n",
+					"    orientation='horizontal'\r\n",
+					")"
+				],
+				"execution_count": 15
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"widgets.RadioButtons(\r\n",
+					"    options=['pepperoni', 'pineapple', 'anchovies'],\r\n",
+					"#    value='pineapple', # Defaults to 'pineapple'\r\n",
+					"#    layout={'width': 'max-content'}, # If the items' names are long\r\n",
+					"    description='Pizza topping:',\r\n",
+					"    disabled=False\r\n",
+					")"
+				],
+				"execution_count": 16
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"widgets.Password(\r\n",
+					"    value='password',\r\n",
+					"    placeholder='Enter password',\r\n",
+					"    description='Password:',\r\n",
+					"    disabled=False\r\n",
+					")"
+				],
+				"execution_count": 17
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"widgets.HTML(\r\n",
+					"    value=\"Hello <b>World</b>\",\r\n",
+					"    placeholder='Some HTML',\r\n",
+					"    description='Some HTML',\r\n",
+					")"
+				],
+				"execution_count": 18
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"play = widgets.Play(\r\n",
+					"    value=50,\r\n",
+					"    min=0,\r\n",
+					"    max=100,\r\n",
+					"    step=1,\r\n",
+					"    interval=500,\r\n",
+					"    description=\"Press play\",\r\n",
+					"    disabled=False\r\n",
+					")\r\n",
+					"slider = widgets.IntSlider()\r\n",
+					"widgets.jslink((play, 'value'), (slider, 'value'))\r\n",
+					"widgets.HBox([play, slider])"
+				],
+				"execution_count": 19
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"color_tags = widgets.ColorsInput(\r\n",
+					"    value=['red', '#2f6d30'],\r\n",
+					"    # allowed_tags=['red', 'blue', 'green'],\r\n",
+					"    # allow_duplicates=False\r\n",
+					")\r\n",
+					"color_tags"
+				],
+				"execution_count": 21
+			}
+		]
+	}
+}
