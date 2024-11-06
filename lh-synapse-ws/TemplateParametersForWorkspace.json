@@ -5,8 +5,14 @@
 		"workspaceName": {
 			"value": "lh-synapse-ws"
 		},
+		"AzureDataLakeGen2Storage_accountKey": {
+			"value": ""
+		},
 		"lh-synapse-ws-WorkspaceDefaultSqlServer_connectionString": {
 			"value": "Integrated Security=False;Encrypt=True;Connection Timeout=30;Data Source=tcp:lh-synapse-ws.sql.azuresynapse.net,1433;Initial Catalog=@{linkedService().DBName}"
+		},
+		"AzureDataLakeGen2Storage_properties_typeProperties_url": {
+			"value": "https://lhadlsgen2storagesec.dfs.core.windows.net/"
 		},
 		"lh-synapse-ws-WorkspaceDefaultStorage_properties_typeProperties_url": {
 			"value": "https://lhadlsgen2storage.dfs.core.windows.net"

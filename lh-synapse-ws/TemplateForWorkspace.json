@@ -7,10 +7,18 @@
 			"metadata": "Workspace name",
 			"defaultValue": "lh-synapse-ws"
 		},
+		"AzureDataLakeGen2Storage_accountKey": {
+			"type": "secureString",
+			"metadata": "Secure string for 'accountKey' of 'AzureDataLakeGen2Storage'"
+		},
 		"lh-synapse-ws-WorkspaceDefaultSqlServer_connectionString": {
 			"type": "secureString",
 			"metadata": "Secure string for 'connectionString' of 'lh-synapse-ws-WorkspaceDefaultSqlServer'",
 			"defaultValue": "Integrated Security=False;Encrypt=True;Connection Timeout=30;Data Source=tcp:lh-synapse-ws.sql.azuresynapse.net,1433;Initial Catalog=@{linkedService().DBName}"
+		},
+		"AzureDataLakeGen2Storage_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://lhadlsgen2storagesec.dfs.core.windows.net/"
 		},
 		"lh-synapse-ws-WorkspaceDefaultStorage_properties_typeProperties_url": {
 			"type": "string",
@@ -21,6 +29,29 @@
 		"workspaceId": "[concat('Microsoft.Synapse/workspaces/', parameters('workspaceName'))]"
 	},
 	"resources": [
+		{
+			"name": "[concat(parameters('workspaceName'), '/AzureDataLakeGen2Storage')]",
+			"type": "Microsoft.Synapse/workspaces/linkedServices",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"annotations": [],
+				"type": "AzureBlobFS",
+				"typeProperties": {
+					"url": "[parameters('AzureDataLakeGen2Storage_properties_typeProperties_url')]",
+					"accountKey": {
+						"type": "SecureString",
+						"value": "[parameters('AzureDataLakeGen2Storage_accountKey')]"
+					}
+				},
+				"connectVia": {
+					"referenceName": "AutoResolveIntegrationRuntime",
+					"type": "IntegrationRuntimeReference"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/integrationRuntimes/AutoResolveIntegrationRuntime')]"
+			]
+		},
 		{
 			"name": "[concat(parameters('workspaceName'), '/lh-synapse-ws-WorkspaceDefaultSqlServer')]",
 			"type": "Microsoft.Synapse/workspaces/linkedServices",
@@ -163,6 +194,52 @@
 			"dependsOn": []
 		},
 		{
+			"name": "[concat(parameters('workspaceName'), '/CREATE EXTERNAL DATA SOURCE abfss')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"folder": {
+					"name": "Serverless"
+				},
+				"content": {
+					"query": "IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'demoDB')\n    CREATE DATABASE demoDB\nGO\n\nUSE demoDB\nGO\n\nIF NOT EXISTS (SELECT * FROM sys.external_data_sources WHERE name = 'myDataSourceManagedABFSS') \n\tCREATE EXTERNAL DATA SOURCE [myDataSourceManagedABFSS] \n\tWITH (\n\t\tLOCATION = 'abfss://lh-synapse-container@lhadlsgen2storage.dfs.core.windows.net' \n\t)\nGO",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "demoDB",
+						"poolName": "Built-in"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/CREATE EXTERNAL FILE FORMAT delimited')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"folder": {
+					"name": "Serverless"
+				},
+				"content": {
+					"query": "IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'demoDB')\n    CREATE DATABASE demoDB\nGO\n\nUSE demoDB\nGO\n\n-- CREATE MASTER KEY ENCRYPTION BY PASSWORD = 'Password01'\n-- GO\n\nIF NOT EXISTS (SELECT * FROM sys.external_file_formats WHERE name = 'delimitedFileFormat') \n\tCREATE EXTERNAL FILE FORMAT [delimitedFileFormat] \n\tWITH ( FORMAT_TYPE = DELIMITEDTEXT ,\n\t       FORMAT_OPTIONS (\n\t\t\t FIELD_TERMINATOR = ',',\n\t\t\t FIRST_ROW = 2,\n\t\t\t USE_TYPE_DEFAULT = FALSE\n\t\t\t))\nGO",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "master",
+						"poolName": "Built-in"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		},
+		{
 			"name": "[concat(parameters('workspaceName'), '/CREATE EXTERNAL FILE FORMAT parquet')]",
 			"type": "Microsoft.Synapse/workspaces/sqlscripts",
 			"apiVersion": "2019-06-01-preview",
@@ -194,7 +271,7 @@
 					"name": "Serverless"
 				},
 				"content": {
-					"query": "IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'demoDB')\n    CREATE DATABASE demoDB\nGO\n\nUSE demoDB\nGO\n\n-----\n\nIF NOT EXISTS (SELECT * FROM sys.schemas WHERE name = 'NYCTaxi')\n    CREATE SCHEMA NYCTaxi\nGO\n\nCREATE EXTERNAL TABLE NYCTaxi.NYCTrip\nWITH(\n    LOCATION = 'lh-synapse-container/NYCTrip/data',\n    DATA_SOURCE = myDataSourceManaged,\n    FILE_FORMAT = parquetFileFormat\n)\nAS\nSELECT\n    TOP 100 *\nFROM\n    OPENROWSET(\n        BULK 'https://lhadlsgen2storage.dfs.core.windows.net/lh-synapse-container/Data/NYCTrip.parquet',\n        FORMAT = 'PARQUET'\n    ) AS [result]\nGO\n\nSELECT * FROM NYCTaxi.NYCTrip\n",
+					"query": "IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'demoDB')\n    CREATE DATABASE demoDB\nGO\n\nUSE demoDB\nGO\n\n-----\n\nIF NOT EXISTS (SELECT * FROM sys.schemas WHERE name = 'NYCTaxi')\n    CREATE SCHEMA NYCTaxi\nGO\n\n-----\n\nCREATE EXTERNAL TABLE NYCTaxi.NYCTrip\nWITH(\n    LOCATION = 'lh-synapse-container/NYCTrip/data',\n    DATA_SOURCE = myDataSourceManaged,\n    FILE_FORMAT = parquetFileFormat\n)\nAS\nSELECT\n    TOP 100 *\nFROM\n    OPENROWSET(\n        BULK 'https://lhadlsgen2storage.dfs.core.windows.net/lh-synapse-container/Data/NYCTrip.parquet',\n        FORMAT = 'PARQUET'\n    ) AS [result]\nGO\n\nSELECT * FROM NYCTaxi.NYCTrip\n",
 					"metadata": {
 						"language": "sql"
 					},
@@ -232,6 +309,26 @@
 			"dependsOn": []
 		},
 		{
+			"name": "[concat(parameters('workspaceName'), '/CREATE EXTERNAL TABLE employee')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"content": {
+					"query": "IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'demoDB')\n    CREATE DATABASE demoDB\nGO\n\nUSE demoDB\nGO\n\n-----\n\nIF NOT EXISTS (SELECT * FROM sys.schemas WHERE name = 'NYCTaxi')\n\tCREATE SCHEMA NYCTaxi\nGO\n\n-----\n\nCREATE EXTERNAL TABLE NYCTaxi.employee (\n\t[empid] bigint,\n\t[empName] nvarchar(4000),\n\t[salary] bigint,\n\t[dept] nvarchar(4000)\n\t)\n\tWITH (\n\tLOCATION = 'Data/employee.csv',\n\tDATA_SOURCE = myDataSourceManagedABFSS,\n\tFILE_FORMAT = delimitedFileFormat\n\t)\nGO\n\n\nSELECT TOP 100 * FROM NYCTaxi.employee\nGO",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "demoDB",
+						"poolName": "Built-in"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		},
+		{
 			"name": "[concat(parameters('workspaceName'), '/CREATE EXTERNAL TABLE schema')]",
 			"type": "Microsoft.Synapse/workspaces/sqlscripts",
 			"apiVersion": "2019-06-01-preview",
@@ -246,6 +343,29 @@
 					},
 					"currentConnection": {
 						"databaseName": "demoDB",
+						"poolName": "Built-in"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/CREATE LOGIN brooke')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"folder": {
+					"name": "Serverless"
+				},
+				"content": {
+					"query": "CREATE LOGIN brooke WITH PASSWORD = 'Azure@123';\n\nCREATE USER brooke FROM LOGIN brooke;\n\nALTER ROLE db_owner ADD MEMBER brooke;",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "master",
 						"poolName": "Built-in"
 					},
 					"resultLimit": 5000
@@ -286,12 +406,81 @@
 					"name": "Dedicated"
 				},
 				"content": {
-					"query": "CREATE TABLE FactInternetSales_new\nWITH\n(\n    CLUSTERED COLUMNSTORE INDEX,\n    DISTRIBUTION = HASH(ProductKey),\n    PARTITION\n    (\n        OrderDateKey RANGE RIGHT FOR VALUES\n        (\n        20000101,20010101,20020101,20030101,20040101,20050101,20060101,20070101,20080101,20090101,\n        20100101,20110101,20120101,20130101,20140101,20150101,20160101,20170101,20180101,20190101,\n        20200101,20210101,20220101,20230101,20240101,20250101,20260101,20270101,20280101,20290101\n        )\n    )\n)\nAS SELECT * FROM FactInternetSales;\n\n",
+					"query": "CREATE TABLE [dbo].[FactInternetSales]\n(\n    [ProductKey] int NOT NULL\n,   [OrderDateKey] int NOT NULL\n,   [CustomerKey] int NOT NULL\n,   [PromotionKey] int NOT NULL\n,   [SalesOrderNumber] nvarchar(20) NOT NULL\n,   [OrderQuantity] smallint NOT NULL\n,   [UnitPrice] money NOT NULL\n,   [SalesAmount] money NOT NULL\n)\nWITH\n(   CLUSTERED COLUMNSTORE INDEX\n,   DISTRIBUTION = HASH([ProductKey])\n,   PARTITION   (   [OrderDateKey] RANGE RIGHT FOR VALUES\n                    (20000101,20010101,20020101\n                    ,20030101,20040101,20050101\n                    )\n                )\n);\n\nSELECT * FROM [dbo].[FactInternetSales]",
 					"metadata": {
 						"language": "sql"
 					},
 					"currentConnection": {
 						"databaseName": "master",
+						"poolName": "Built-in"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/CREATE TABLE REPLICATE')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"folder": {
+					"name": "Dedicated"
+				},
+				"content": {
+					"query": "CREATE TABLE dbo.employees_REPLICATE\nWITH\n  (\n    HEAP,  \n    DISTRIBUTION = REPLICATE  \n  )  \nAS SELECT * FROM dbo.employees\nOPTION  (LABEL  = 'CTAS : employees_REPLICATE')\n\nselect * from dbo.employees_REPLICATE\n\n\n-- Switch table names\nRENAME OBJECT dbo.employees to employees_old;\nRENAME OBJECT dbo.employees_REPLICATE TO employees;\n\nDROP TABLE dbo.employees_old;\n\nSELECT * FROM employees\n",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "master",
+						"poolName": "Built-in"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/CREATE TABLE TEMP employees')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"folder": {
+					"name": "Serverless"
+				},
+				"content": {
+					"query": "IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'demoDB')\n    CREATE DATABASE demoDB\nGO\n\nUSE demoDB\nGO\n\n-----\n\nCREATE TABLE #employees\n(\n    empID INT NOT NULL,\n    name NVARCHAR(50),\n    country NVARCHAR(50),\n    deptID INT NOT NULL\n)\n\nINSERT INTO #employees VALUES(1, 'Alexander', 'United States', 10)\nINSERT INTO #employees VALUES(2, 'Olivia', 'Canada', 40)\nINSERT INTO #employees VALUES(3, 'Benjamin', 'Brazil', 10)\nINSERT INTO #employees VALUES(4, 'Emily', 'India', 30)\nINSERT INTO #employees VALUES(5, 'Christopher', 'Australia', 20)\nINSERT INTO #employees VALUES(6, 'Sophia', 'France', 10)\nINSERT INTO #employees VALUES(7, 'William', 'Australia', 20)\nINSERT INTO #employees VALUES(8, 'Ava', 'South Africa', 30)\nINSERT INTO #employees VALUES(9, 'James', 'Mexico', 10)\nINSERT INTO #employees VALUES(10, 'Mia', 'Russia', 40)\n\nSELECT * FROM #employees WHERE country = 'Australia'",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "demoDB",
+						"poolName": "Built-in"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/CREATE TABLE TEMP')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"folder": {
+					"name": "Serverless"
+				},
+				"content": {
+					"query": "IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'demoDB')\n    CREATE DATABASE demoDB\nGO\n\nUSE demoDB\nGO\n\n-----\n\nCREATE TABLE #table_temp\n(\nid int,\nname nvarchar(30)\n)\n-- with\n-- (\n-- distribution = hash(id),\n-- clustered columnstore index\n-- )\n\ninsert into #table_temp values(1,'Sophie')\ninsert into #table_temp values(2,'Tom')\n\n\nselect * from #table_temp\n\nselect * from tempdb.#table_temp\n\ndrop table #table_temp",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "demoDB",
 						"poolName": "Built-in"
 					},
 					"resultLimit": 5000
@@ -338,6 +527,29 @@
 					},
 					"currentConnection": {
 						"databaseName": "master",
+						"poolName": "Built-in"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/CREATE sp')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"folder": {
+					"name": "Serverless"
+				},
+				"content": {
+					"query": "IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'demoDB')\n    CREATE DATABASE demoDB\nGO\n\nUSE demoDB\nGO\n\n-----\n\nIF EXISTS ( SELECT type_desc, type FROM sys.procedures WHERE NAME = 'sp_trips_by_year' AND type = 'P')\n    DROP PROCEDURE NYCTaxi.sp_trips_by_year\nGO\n\nCREATE PROCEDURE NYCTaxi.sp_trips_by_year @trip_year INT\nAS\nBEGIN\n\n    DECLARE @location NVARCHAR(MAX)\n\n    SET @location = CONCAT('lh-synapse-container/NYCTripSmall/parquet/',@trip_year,'/')\n\n    -- Drop the table if it already exists\n    IF EXISTS (SELECT * FROM sys.external_tables WHERE name = 'NYCTripSmall_year' )\n        DROP EXTERNAL TABLE NYCTaxi.NYCTripSmall_year\n\n    -----\n\n    CREATE EXTERNAL TABLE NYCTaxi.NYCTripSmall_year\n    WITH(\n        LOCATION = 'lh-synapse-container/NYCTripSmall/parquet/today',\n        DATA_SOURCE = myDataSourceSAS,\n        FILE_FORMAT = parquetFileFormat\n    )\n    AS\n    SELECT lpep_pickup_datetime, total_amount\n    FROM\n        OPENROWSET(\n            BULK 'https://lhadlsgen2storage.dfs.core.windows.net/lh-synapse-container/Data/NYCTripSmall.parquet',\n            --DATA_SOURCE = 'myDataSourceManaged',\n            FORMAT = 'PARQUET'\n    ) AS source_data\n    WHERE YEAR(lpep_pickup_datetime) = @trip_year\n\nEND;\n\n-- CREATE CREDENTIAL [https://lhadlsgen2storage.dfs.core.windows.net/lh-synapse-container/Data/NYCTripSmall.parquet]\n-- WITH IDENTITY = 'Managed Identity';\n\n-- [NYCTaxi].[sp_trips_by_year] 2023",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "demoDB",
 						"poolName": "Built-in"
 					},
 					"resultLimit": 5000
@@ -801,68 +1013,3483 @@
 			"dependsOn": []
 		},
 		{
-			"name": "[concat(parameters('workspaceName'), '/CREATE EXTERNAL DATA SOURCE abfss')]",
-			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"name": "[concat(parameters('workspaceName'), '/Notebook Languges')]",
+			"type": "Microsoft.Synapse/workspaces/notebooks",
 			"apiVersion": "2019-06-01-preview",
 			"properties": {
-				"folder": {
-					"name": "Serverless"
+				"nbformat": 4,
+				"nbformat_minor": 2,
+				"sessionProperties": {
+					"driverMemory": "28g",
+					"driverCores": 4,
+					"executorMemory": "28g",
+					"executorCores": 4,
+					"numExecutors": 2,
+					"conf": {
+						"spark.dynamicAllocation.enabled": "false",
+						"spark.dynamicAllocation.minExecutors": "2",
+						"spark.dynamicAllocation.maxExecutors": "2",
+						"spark.autotune.trackingId": "5b8f9061-77e5-4fe7-ae3e-51fedec3e13f"
+					}
 				},
-				"content": {
-					"query": "IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'demoDB')\n    CREATE DATABASE demoDB\nGO\n\nUSE demoDB\nGO\n\nIF NOT EXISTS (SELECT * FROM sys.external_data_sources WHERE name = 'myDataSourceManagedABFSS') \n\tCREATE EXTERNAL DATA SOURCE [myDataSourceManagedABFSS] \n\tWITH (\n\t\tLOCATION = 'abfss://lh-synapse-container@lhadlsgen2storage.dfs.core.windows.net' \n\t)\nGO",
-					"metadata": {
-						"language": "sql"
+				"metadata": {
+					"saveOutput": true,
+					"enableDebugMode": false,
+					"kernelspec": {
+						"name": "synapse_pyspark",
+						"display_name": "Synapse PySpark"
 					},
-					"currentConnection": {
-						"databaseName": "demoDB",
-						"poolName": "Built-in"
+					"language_info": {
+						"name": "python"
 					},
-					"resultLimit": 5000
+					"sessionKeepAliveTimeout": 30
 				},
-				"type": "SqlQuery"
+				"cells": [
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							},
+							"microsoft": {
+								"language": "scala"
+							}
+						},
+						"source": [
+							"%%spark\r\n",
+							"val name = \"Vijay\"\r\n",
+							"println(name)"
+						],
+						"outputs": [],
+						"execution_count": 2
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							},
+							"microsoft": {
+								"language": "python"
+							}
+						},
+						"source": [
+							"%%pyspark\r\n",
+							"name = \"Vijay\"\r\n",
+							"print(name)"
+						],
+						"outputs": [],
+						"execution_count": 3
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							},
+							"microsoft": {
+								"language": "sparksql"
+							},
+							"collapsed": false
+						},
+						"source": [
+							"%%sql\r\n",
+							"SELECT \"10\" as col1"
+						],
+						"outputs": [],
+						"execution_count": 4
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							},
+							"microsoft": {
+								"language": "r"
+							}
+						},
+						"source": [
+							"%%sparkr\r\n",
+							"name <- \"Vijay\"\r\n",
+							"print(name)"
+						],
+						"outputs": [],
+						"execution_count": 5
+					},
+					{
+						"cell_type": "markdown",
+						"metadata": {
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"**Scala to create temp table**"
+						]
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							},
+							"microsoft": {
+								"language": "scala"
+							}
+						},
+						"source": [
+							"%%spark\r\n",
+							"val scala_df = spark.read.sqlanalytics(\"sqlpool.dbo.employees\")\r\n",
+							"scala_df.show()"
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							},
+							"microsoft": {
+								"language": "scala"
+							}
+						},
+						"source": [
+							"%%spark\r\n",
+							"scala_df.createOrReplaceTempView(\"emp_temp_view\")"
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "markdown",
+						"metadata": {
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"**Query data using spark sql**"
+						]
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							},
+							"microsoft": {
+								"language": "sparksql"
+							}
+						},
+						"source": [
+							"%%sql\r\n",
+							"SELECT * FROM emp_temp_view"
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "markdown",
+						"metadata": {
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"**Read data in pyspark**"
+						]
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"spark_df = spark.sql(\"SELECT * FROM emp_temp_view\")\r\n",
+							"display(spark_df)"
+						],
+						"outputs": [],
+						"execution_count": null
+					}
+				]
 			},
 			"dependsOn": []
 		},
 		{
-			"name": "[concat(parameters('workspaceName'), '/CREATE EXTERNAL TABLE employee')]",
-			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"name": "[concat(parameters('workspaceName'), '/Parameters')]",
+			"type": "Microsoft.Synapse/workspaces/notebooks",
 			"apiVersion": "2019-06-01-preview",
 			"properties": {
-				"content": {
-					"query": "CREATE EXTERNAL TABLE NYCTrip.employee (\n\t[empid] bigint,\n\t[empName] nvarchar(4000),\n\t[salary] bigint,\n\t[dept] nvarchar(4000)\n\t)\n\tWITH (\n\tLOCATION = 'Data/employee.csv',\n\tDATA_SOURCE = myDataSourceManagedABFSS,\n\tFILE_FORMAT = delimitedFileFormat\n\t)\nGO\n\n\nSELECT TOP 100 * FROM NYCTrip.employee\nGO",
-					"metadata": {
-						"language": "sql"
-					},
-					"currentConnection": {
-						"databaseName": "demoDB",
-						"poolName": "Built-in"
-					},
-					"resultLimit": 5000
+				"nbformat": 4,
+				"nbformat_minor": 2,
+				"sessionProperties": {
+					"driverMemory": "28g",
+					"driverCores": 4,
+					"executorMemory": "28g",
+					"executorCores": 4,
+					"numExecutors": 2,
+					"conf": {
+						"spark.dynamicAllocation.enabled": "false",
+						"spark.dynamicAllocation.minExecutors": "2",
+						"spark.dynamicAllocation.maxExecutors": "2",
+						"spark.autotune.trackingId": "df2f9064-78d5-4146-bef9-bc715c861490"
+					}
 				},
-				"type": "SqlQuery"
+				"metadata": {
+					"saveOutput": true,
+					"enableDebugMode": false,
+					"kernelspec": {
+						"name": "synapse_pyspark",
+						"display_name": "Synapse PySpark"
+					},
+					"language_info": {
+						"name": "python"
+					},
+					"sessionKeepAliveTimeout": 30
+				},
+				"cells": [
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"# name = \"Vijay\"\r\n",
+							"# print(\"Hello \" + name)"
+						],
+						"outputs": [],
+						"execution_count": 8
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							},
+							"tags": [
+								"parameters"
+							]
+						},
+						"source": [
+							"first_name = \"Lee\"\r\n",
+							"last_name = \"Hannah\""
+						],
+						"outputs": [],
+						"execution_count": 20
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"full_name = first_name + \" \" + last_name\r\n",
+							"print(\"Hello\" + \" \" + full_name)"
+						],
+						"outputs": [],
+						"execution_count": 21
+					},
+					{
+						"cell_type": "markdown",
+						"metadata": {
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"Run above from another notebook..."
+						]
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"%run /Parameters {\"first_name\":\"Tony\", \"last_name\":\"Stark\"}"
+						],
+						"outputs": [],
+						"execution_count": null
+					}
+				]
 			},
 			"dependsOn": []
 		},
 		{
-			"name": "[concat(parameters('workspaceName'), '/CREATE EXTERNAL FILE FORMAT delimited')]",
-			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"name": "[concat(parameters('workspaceName'), '/Read and Write files')]",
+			"type": "Microsoft.Synapse/workspaces/notebooks",
 			"apiVersion": "2019-06-01-preview",
 			"properties": {
-				"folder": {
-					"name": "Serverless"
+				"nbformat": 4,
+				"nbformat_minor": 2,
+				"sessionProperties": {
+					"driverMemory": "28g",
+					"driverCores": 4,
+					"executorMemory": "28g",
+					"executorCores": 4,
+					"numExecutors": 2,
+					"conf": {
+						"spark.dynamicAllocation.enabled": "false",
+						"spark.dynamicAllocation.minExecutors": "2",
+						"spark.dynamicAllocation.maxExecutors": "2",
+						"spark.autotune.trackingId": "41368c61-adca-4c10-8d6b-f5c57173a9bb"
+					}
 				},
-				"content": {
-					"query": "IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'demoDB')\n    CREATE DATABASE demoDB\nGO\n\nUSE demoDB\nGO\n\n-- CREATE MASTER KEY ENCRYPTION BY PASSWORD = 'Password01'\n-- GO\n\nIF NOT EXISTS (SELECT * FROM sys.external_file_formats WHERE name = 'delimitedFileFormat') \n\tCREATE EXTERNAL FILE FORMAT [delimitedFileFormat] \n\tWITH ( FORMAT_TYPE = DELIMITEDTEXT ,\n\t       FORMAT_OPTIONS (\n\t\t\t FIELD_TERMINATOR = ',',\n\t\t\t FIRST_ROW = 2,\n\t\t\t USE_TYPE_DEFAULT = FALSE\n\t\t\t))\nGO",
-					"metadata": {
-						"language": "sql"
+				"metadata": {
+					"saveOutput": true,
+					"enableDebugMode": false,
+					"kernelspec": {
+						"name": "synapse_pyspark",
+						"display_name": "Synapse PySpark"
 					},
-					"currentConnection": {
-						"databaseName": "master",
-						"poolName": "Built-in"
+					"language_info": {
+						"name": "python"
 					},
-					"resultLimit": 5000
+					"sessionKeepAliveTimeout": 30
 				},
-				"type": "SqlQuery"
+				"cells": [
+					{
+						"cell_type": "markdown",
+						"metadata": {
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"<mark>**Part 1: Read and Write csv file**</mark>"
+						]
+					},
+					{
+						"cell_type": "code",
+						"source": [
+							"import pandas as pd"
+						],
+						"outputs": [],
+						"execution_count": 2
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"# Read a csv file\r\n",
+							"\r\n",
+							"df = pd.read_csv('abfss://lh-synapse-container@lhadlsgen2storage.dfs.core.windows.net/nb/input/employee_data.csv')\r\n",
+							"print(df)"
+						],
+						"outputs": [],
+						"execution_count": 3
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"# write csv file\r\n",
+							"\r\n",
+							"my_dict = {'Name':['Tom', 'Sara', 'Alan', 'Grace'], 'Age':[20, 21, 22, 23]}\r\n",
+							"print(my_dict)"
+						],
+						"outputs": [],
+						"execution_count": 4
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"data = pd.DataFrame(my_dict)\r\n",
+							"print(data)"
+						],
+						"outputs": [],
+						"execution_count": 5
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"data.to_csv('abfss://lh-synapse-container@lhadlsgen2storage.dfs.core.windows.net/nb/output/emp_names.csv')"
+						],
+						"outputs": [],
+						"execution_count": 6
+					},
+					{
+						"cell_type": "markdown",
+						"metadata": {
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"<mark>**Part 2: Read and Write parquet file**</mark>"
+						]
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"import pandas as pd"
+						],
+						"outputs": [],
+						"execution_count": 7
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"# read parquet file\r\n",
+							"\r\n",
+							"df = pd.read_parquet('abfss://lh-synapse-container@lhadlsgen2storage.dfs.core.windows.net/nb/input/salary_data.parquet')\r\n",
+							"print(df)"
+						],
+						"outputs": [],
+						"execution_count": 10
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"# write parquet file\r\n",
+							"\r\n",
+							"df.to_parquet('abfss://lh-synapse-container@lhadlsgen2storage.dfs.core.windows.net/nb/output/salary_data2.parquet')"
+						],
+						"outputs": [],
+						"execution_count": 11
+					},
+					{
+						"cell_type": "markdown",
+						"metadata": {
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"<mark>**Part 3: Read and Write excel file**</mark>"
+						]
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"import pandas as pd"
+						],
+						"outputs": [],
+						"execution_count": 12
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"# Read excel file\r\n",
+							"\r\n",
+							"df = pd.read_excel('abfss://lh-synapse-container@lhadlsgen2storage.dfs.core.windows.net/nb/input/students_data.xlsx')\r\n",
+							"print(df)"
+						],
+						"outputs": [],
+						"execution_count": 13
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"# Write excel file\r\n",
+							"\r\n",
+							"df.to_csv('abfss://lh-synapse-container@lhadlsgen2storage.dfs.core.windows.net/nb/output/students_data2.xlsx')"
+						],
+						"outputs": [],
+						"execution_count": 14
+					}
+				]
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/Read and Writes connections')]",
+			"type": "Microsoft.Synapse/workspaces/notebooks",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"nbformat": 4,
+				"nbformat_minor": 2,
+				"bigDataPool": {
+					"referenceName": "LHSparkPool",
+					"type": "BigDataPoolReference"
+				},
+				"sessionProperties": {
+					"driverMemory": "28g",
+					"driverCores": 4,
+					"executorMemory": "28g",
+					"executorCores": 4,
+					"numExecutors": 2,
+					"conf": {
+						"spark.dynamicAllocation.enabled": "false",
+						"spark.dynamicAllocation.minExecutors": "2",
+						"spark.dynamicAllocation.maxExecutors": "2",
+						"spark.autotune.trackingId": "736e5943-720b-4b29-9f57-c292d3207aec"
+					}
+				},
+				"metadata": {
+					"saveOutput": true,
+					"enableDebugMode": false,
+					"kernelspec": {
+						"name": "synapse_pyspark",
+						"display_name": "Synapse PySpark"
+					},
+					"language_info": {
+						"name": "python"
+					},
+					"a365ComputeOptions": {
+						"id": "/subscriptions/05174b2b-36c5-447e-a3b3-c8f02ccb85dc/resourceGroups/lh-synapse-rg/providers/Microsoft.Synapse/workspaces/lh-synapse-ws/bigDataPools/LHSparkPool",
+						"name": "LHSparkPool",
+						"type": "Spark",
+						"endpoint": "https://lh-synapse-ws.dev.azuresynapse.net/livyApi/versions/2019-11-01-preview/sparkPools/LHSparkPool",
+						"auth": {
+							"type": "AAD",
+							"authResource": "https://dev.azuresynapse.net"
+						},
+						"sparkVersion": "3.4",
+						"nodeCount": 3,
+						"cores": 4,
+						"memory": 28
+					},
+					"sessionKeepAliveTimeout": 30
+				},
+				"cells": [
+					{
+						"cell_type": "code",
+						"source": [
+							"# prerequisites\r\n",
+							"\r\n",
+							"# 1. Create secondary gen2 storage account\r\n",
+							"# 2. Add \"Storage Blob Data Contributor\" role to gen2 storage account\r\n",
+							"# 3. Create linked service"
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "markdown",
+						"metadata": {
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"<mark>**Part 1: Read/Write data using secondary ADLS account (Linked Service)**</mark>"
+						]
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"import pandas as pd\r\n",
+							"import fsspec"
+						],
+						"outputs": [],
+						"execution_count": 1
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"# Define the storage account details\r\n",
+							"\r\n",
+							"storage_account_name = \"lhadlsgen2storagesec\"\r\n",
+							"file_system_name = \"main-container\"\r\n",
+							"linked_service_name = \"AzureDataLakeGen2Storage\"\r\n",
+							"input_file_path = \"/input/employee_data.csv\"  # Make sure to include the leading slash"
+						],
+						"outputs": [],
+						"execution_count": 22
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"# Define the storage string\r\n",
+							"storage_connection = f\"abfs://{file_system_name}@{account_name}.dfs.core.windows.net\"\r\n",
+							"\r\n",
+							"# Read data file\r\n",
+							"df = pd.read_csv(\r\n",
+							"    f\"{storage_connection}{input_file_path}\",\r\n",
+							"    storage_options={\"linked_service\": linked_service_name}\r\n",
+							")\r\n",
+							"print(df)"
+						],
+						"outputs": [],
+						"execution_count": 27
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"output_file_path = \"/output/emp_names.csv\"  # Make sure to include the leading slash"
+						],
+						"outputs": [],
+						"execution_count": 28
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"# Write data file\r\n",
+							"\r\n",
+							"data = pd.DataFrame({'Name':['Anna', 'Jack', 'Emma', 'Luke'], 'ID':[20, 21, 19, 18]})\r\n",
+							"data.to_csv(\r\n",
+							"    f\"{storage_connection}{output_file_path}\",\r\n",
+							"    storage_options={\"linked_service\": linked_service_name},\r\n",
+							"    index=False,\r\n",
+							")"
+						],
+						"outputs": [],
+						"execution_count": 30
+					},
+					{
+						"cell_type": "markdown",
+						"metadata": {
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"<mark>**Part 2.1: Read/Write data using secondary ADLS account (sas token) & fsspec**</mark>"
+						]
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"sas_key = TokenLibrary.getConnectionString('AzureDataLakeGen2Storage')\r\n",
+							"fsspec_handle_input = fsspec.open('abfs://main-container/input/employee_data.csv', account_name = storage_account_name, sas_token = sas_key)\r\n",
+							"fsspec_handle_output = fsspec.open('abfs://main-container/output/emp_names4.csv', account_name = storage_account_name, sas_token = sas_key, mode='wt')"
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"with fsspec_handle_output.open() as f:\r\n",
+							"    data.to_csv(f)"
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"# Read data file\r\n",
+							"with fsspec_handle_input.open() as f:\r\n",
+							"    df = pd.read_csv(f)\r\n",
+							"\r\n",
+							"print(df)"
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "markdown",
+						"metadata": {
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"<mark>**Part 2: Read/Write data using secondary ADLS account (sas token)**</mark>"
+						]
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"# Define the storage account details\r\n",
+							"sas_token = 'sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupyx&se=2024-12-01T23:37:33Z&st=2024-11-01T15:37:33Z&spr=https&sig=Tr0FuykHeg%2F7MsDNxN24p33m%2F2jDf%2FXQ6ZXS4gMA3xE%3D'\r\n",
+							"\r\n",
+							""
+						],
+						"outputs": [],
+						"execution_count": 31
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"# Define the storage string\r\n",
+							"storage_connection = f\"abfs://{file_system_name}@{account_name}.dfs.core.windows.net\"\r\n",
+							"\r\n",
+							"# Read data file\r\n",
+							"df = pd.read_csv(\r\n",
+							"    f\"{storage_connection}{input_file_path}\",\r\n",
+							"    storage_options={'sas_token': sas_token},\r\n",
+							")\r\n",
+							"print(df)"
+						],
+						"outputs": [],
+						"execution_count": 34
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"output_file_path = \"/output/emp_names2.csv\"  # Make sure to include the leading slash"
+						],
+						"outputs": [],
+						"execution_count": 35
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"# Write data file\r\n",
+							"data = pd.DataFrame({'Name':['Anna', 'Jack', 'Emma', 'Luke'], 'ID':[20, 21, 19, 18]})\r\n",
+							"data.to_csv(\r\n",
+							"    f\"{storage_connection}{output_file_path}\",\r\n",
+							"    storage_options={'sas_token': sas_token},\r\n",
+							"    index=False,\r\n",
+							")"
+						],
+						"outputs": [],
+						"execution_count": 37
+					},
+					{
+						"cell_type": "markdown",
+						"metadata": {
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"<mark>**Part 3: Read/Write data using secondary ADLS account (connection string)**</mark>"
+						]
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"# Define the storage account details\r\n",
+							"connection_string = 'BlobEndpoint=https://lhadlsgen2storagesec.blob.core.windows.net/;QueueEndpoint=https://lhadlsgen2storagesec.queue.core.windows.net/;FileEndpoint=https://lhadlsgen2storagesec.file.core.windows.net/;TableEndpoint=https://lhadlsgen2storagesec.table.core.windows.net/;SharedAccessSignature=sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupyx&se=2024-12-01T23:37:33Z&st=2024-11-01T15:37:33Z&spr=https&sig=Tr0FuykHeg%2F7MsDNxN24p33m%2F2jDf%2FXQ6ZXS4gMA3xE%3D'\r\n",
+							""
+						],
+						"outputs": [],
+						"execution_count": 38
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"# Define the storage string\r\n",
+							"storage_connection = f\"abfs://{file_system_name}@{account_name}.dfs.core.windows.net\"\r\n",
+							"\r\n",
+							"# Read data file\r\n",
+							"df = pd.read_csv(\r\n",
+							"    f\"{storage_connection}{input_file_path}\",\r\n",
+							"    storage_options={'connection_string': connection_string},\r\n",
+							")\r\n",
+							"print(df)"
+						],
+						"outputs": [],
+						"execution_count": 40
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"output_file_path = \"/output/emp_names3.csv\"  # Make sure to include the leading slash"
+						],
+						"outputs": [],
+						"execution_count": 41
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"# Write data file\r\n",
+							"data = pd.DataFrame({'Name':['Anna', 'Jack', 'Emma', 'Luke'], 'ID':[20, 21, 19, 18]})\r\n",
+							"data.to_csv(\r\n",
+							"    f\"{storage_connection}{output_file_path}\",\r\n",
+							"    storage_options={'connection_string': connection_string},\r\n",
+							"    index=False,\r\n",
+							")"
+						],
+						"outputs": [],
+						"execution_count": 42
+					}
+				]
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/System Utilities fs')]",
+			"type": "Microsoft.Synapse/workspaces/notebooks",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"nbformat": 4,
+				"nbformat_minor": 2,
+				"sessionProperties": {
+					"driverMemory": "28g",
+					"driverCores": 4,
+					"executorMemory": "28g",
+					"executorCores": 4,
+					"numExecutors": 2,
+					"conf": {
+						"spark.dynamicAllocation.enabled": "false",
+						"spark.dynamicAllocation.minExecutors": "2",
+						"spark.dynamicAllocation.maxExecutors": "2",
+						"spark.autotune.trackingId": "4f32db3e-7345-4a72-bf65-c185b57bc15c"
+					}
+				},
+				"metadata": {
+					"saveOutput": true,
+					"enableDebugMode": false,
+					"kernelspec": {
+						"name": "synapse_pyspark",
+						"display_name": "Synapse PySpark"
+					},
+					"language_info": {
+						"name": "python"
+					},
+					"sessionKeepAliveTimeout": 30
+				},
+				"cells": [
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"from notebookutils import mssparkutils"
+						],
+						"outputs": [],
+						"execution_count": 4
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"mssparkutils.fs.help()"
+						],
+						"outputs": [],
+						"execution_count": 5
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"# copy file\r\n",
+							"\r\n",
+							"mssparkutils.fs.cp('/input/employee_data.csv', '/output/employee_data.csv')"
+						],
+						"outputs": [],
+						"execution_count": 6
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"mssparkutils.fs.cp('/input/employee_data.csv', '/output/employee_data2.csv')"
+						],
+						"outputs": [],
+						"execution_count": 7
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"mssparkutils.fs.cp('/input/', '/output/', True)"
+						],
+						"outputs": [],
+						"execution_count": 8
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"# fastcp\r\n",
+							"\r\n",
+							"mssparkutils.fs.fastcp('/input/employee_data.csv', '/output/employee_data2.csv')"
+						],
+						"outputs": [],
+						"execution_count": 9
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"# Move file\r\n",
+							"\r\n",
+							"mssparkutils.fs.mv('/input/employee_data.csv', '/output/employee_data.csv')"
+						],
+						"outputs": [],
+						"execution_count": 10
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"mssparkutils.fs.mv('/input/salary_data.parquet', '/output/salary_data2.parquet')"
+						],
+						"outputs": [],
+						"execution_count": 11
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"mssparkutils.fs.mv('/input/', '/output/')"
+						],
+						"outputs": [],
+						"execution_count": 12
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"# list files\r\n",
+							"\r\n",
+							"mssparkutils.fs.ls('/input/')"
+						],
+						"outputs": [],
+						"execution_count": 14
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"# View file properties\r\n",
+							"\r\n",
+							"files = mssparkutils.fs.ls('/input/')\r\n",
+							"for file in files:\r\n",
+							"    print(file.name, file.size)"
+						],
+						"outputs": [],
+						"execution_count": 15
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"# View file properties\r\n",
+							"\r\n",
+							"files = mssparkutils.fs.ls('/input/employee_data.csv')\r\n",
+							"for file in files:\r\n",
+							"    print(file.name, file.size)"
+						],
+						"outputs": [],
+						"execution_count": 16
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"files = mssparkutils.fs.ls('/input/')\r\n",
+							"for file in files:\r\n",
+							"    print(file.name, file.isDir, file.isFile, file.path, file.size, file.modifyTime)"
+						],
+						"outputs": [],
+						"execution_count": 17
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"# list of file information objects\r\n",
+							"\r\n",
+							"files = mssparkutils.fs.ls('/input/')\r\n",
+							"print(dir(files[0]))"
+						],
+						"outputs": [],
+						"execution_count": 18
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"# Create new directory\r\n",
+							"\r\n",
+							"mssparkutils.fs.mkdirs('/input/data')"
+						],
+						"outputs": [],
+						"execution_count": 19
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"# Write file\r\n",
+							"\r\n",
+							"mssparkutils.fs.put('/input/data/test.csv', '1, John', True)"
+						],
+						"outputs": [],
+						"execution_count": 20
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"# Append content to a file\r\n",
+							"\r\n",
+							"mssparkutils.fs.append('/input/data/test.csv', '\\n2, Sara', True)"
+						],
+						"outputs": [],
+						"execution_count": 21
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"# Preview the file content\r\n",
+							"\r\n",
+							"mssparkutils.fs.head('/input/data/test.csv')"
+						],
+						"outputs": [],
+						"execution_count": 22
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"# Remove file\r\n",
+							"\r\n",
+							"mssparkutils.fs.rm('/input/data/test.csv', True)"
+						],
+						"outputs": [],
+						"execution_count": 23
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"# Remove the directory\r\n",
+							"\r\n",
+							"mssparkutils.fs.rm('/input/data', True)"
+						],
+						"outputs": [],
+						"execution_count": 24
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"# exists\r\n",
+							"\r\n",
+							"\r\n",
+							"# Check if a file exists\r\n",
+							"file_path = \"/input/employee_data.csv\"\r\n",
+							"if mssparkutils.fs.exists(file_path):\r\n",
+							"    print(\"File exists!\")\r\n",
+							"else:\r\n",
+							"    print(\"File does not exist.\")\r\n",
+							"\r\n",
+							"# Check if a directory exists\r\n",
+							"dir_path = \"/input/\"\r\n",
+							"if mssparkutils.fs.exists(dir_path):\r\n",
+							"    print(\"Directory exists!\")\r\n",
+							"else:\r\n",
+							"    print(\"Directory does not exist.\")"
+						],
+						"outputs": [],
+						"execution_count": 25
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							""
+						],
+						"outputs": [],
+						"execution_count": null
+					}
+				]
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/UsefulCode')]",
+			"type": "Microsoft.Synapse/workspaces/notebooks",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"nbformat": 4,
+				"nbformat_minor": 2,
+				"sessionProperties": {
+					"driverMemory": "28g",
+					"driverCores": 4,
+					"executorMemory": "28g",
+					"executorCores": 4,
+					"numExecutors": 2,
+					"conf": {
+						"spark.dynamicAllocation.enabled": "false",
+						"spark.dynamicAllocation.minExecutors": "2",
+						"spark.dynamicAllocation.maxExecutors": "2",
+						"spark.autotune.trackingId": "e3cbea47-b594-4fbd-86bf-a19dbc478588"
+					}
+				},
+				"metadata": {
+					"saveOutput": true,
+					"enableDebugMode": false,
+					"kernelspec": {
+						"name": "synapse_pyspark",
+						"display_name": "Synapse PySpark"
+					},
+					"language_info": {
+						"name": "python"
+					},
+					"sessionKeepAliveTimeout": 30
+				},
+				"cells": [
+					{
+						"cell_type": "markdown",
+						"metadata": {
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"<mark>**Part 1: Creating a Dataframe**</mark>"
+						]
+					},
+					{
+						"cell_type": "code",
+						"source": [
+							"new_rows = [('Sara', 24, 4500), ('John', 25, 6000), ('Sophia', 25, 5000), ('Jacob', 24, 5500)]\r\n",
+							"print(new_rows)"
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"schema_list = ['name', 'age', 'salary']\r\n",
+							"print(schema_list)"
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"demo_df = spark.createDataFrame(data=new_rows, schema=schema_list)"
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"demo_df.show()"
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "markdown",
+						"metadata": {
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"<mark>**Part 2: Running Spark SQL Statements**</mark>"
+						]
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"demo_df.createTempView('temp_view')"
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							},
+							"microsoft": {
+								"language": "sparksql"
+							},
+							"collapsed": false
+						},
+						"source": [
+							"%%sql\r\n",
+							"SHOW TABLES"
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							},
+							"microsoft": {
+								"language": "sparksql"
+							},
+							"collapsed": false
+						},
+						"source": [
+							"%%sql\r\n",
+							"SELECT * FROM temp_view"
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "markdown",
+						"metadata": {
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"<mark>**Part 3: Creating csv and parquet files from a dataframe**</mark>"
+						]
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"# Create a csv file\r\n",
+							"\r\n",
+							"demo_df.write.csv(path='abfss://lh-synapse-container@lhadlsgen2storage.dfs.core.windows.net/nb/', mode='overwrite')"
+						],
+						"outputs": [],
+						"execution_count": 14
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"# Create a parquet file\r\n",
+							"\r\n",
+							"demo_df.write.parquet(path='abfss://lh-synapse-container@lhadlsgen2storage.dfs.core.windows.net/nb/', mode='overwrite')"
+						],
+						"outputs": [],
+						"execution_count": 15
+					}
+				]
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/Widget')]",
+			"type": "Microsoft.Synapse/workspaces/notebooks",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"nbformat": 4,
+				"nbformat_minor": 2,
+				"sessionProperties": {
+					"driverMemory": "28g",
+					"driverCores": 4,
+					"executorMemory": "28g",
+					"executorCores": 4,
+					"numExecutors": 2,
+					"conf": {
+						"spark.dynamicAllocation.enabled": "false",
+						"spark.dynamicAllocation.minExecutors": "2",
+						"spark.dynamicAllocation.maxExecutors": "2",
+						"spark.autotune.trackingId": "5c625ff6-e38d-4b1a-b9d4-bfab07d7cc5f"
+					}
+				},
+				"metadata": {
+					"saveOutput": true,
+					"enableDebugMode": false,
+					"kernelspec": {
+						"name": "synapse_pyspark",
+						"display_name": "Synapse PySpark"
+					},
+					"language_info": {
+						"name": "python"
+					},
+					"sessionKeepAliveTimeout": 30
+				},
+				"cells": [
+					{
+						"cell_type": "markdown",
+						"metadata": {
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"https://ipywidgets.readthedocs.io/en/8.1.5/examples/Widget%20Basics.html"
+						]
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"import ipywidgets as widgets"
+						],
+						"outputs": [],
+						"execution_count": 2
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"widgets.IntSlider()"
+						],
+						"outputs": [],
+						"execution_count": 3
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"from IPython.display import display\r\n",
+							"w = widgets.IntSlider()\r\n",
+							"display(w)"
+						],
+						"outputs": [],
+						"execution_count": 4
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"display(w)\r\n",
+							"display(w)"
+						],
+						"outputs": [],
+						"execution_count": 6
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"w.close()"
+						],
+						"outputs": [],
+						"execution_count": 7
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"display(w)"
+						],
+						"outputs": [],
+						"execution_count": 8
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"w.keys"
+						],
+						"outputs": [],
+						"execution_count": 9
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"widgets.Text(value='Hello World!', disabled=True)"
+						],
+						"outputs": [],
+						"execution_count": 10
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"a = widgets.FloatText()\r\n",
+							"b = widgets.FloatSlider()\r\n",
+							"display(a,b)\r\n",
+							"\r\n",
+							"mylink = widgets.jslink((a, 'value'), (b, 'value'))"
+						],
+						"outputs": [],
+						"execution_count": 11
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"widgets.IntSlider(\r\n",
+							"    value=7,\r\n",
+							"    min=0,\r\n",
+							"    max=10,\r\n",
+							"    step=1,\r\n",
+							"    description='Test:',\r\n",
+							"    disabled=False,\r\n",
+							"    continuous_update=False,\r\n",
+							"    orientation='horizontal',\r\n",
+							"    readout=True,\r\n",
+							"    readout_format='d'\r\n",
+							")"
+						],
+						"outputs": [],
+						"execution_count": 12
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"widgets.FloatSlider(\r\n",
+							"    value=7.5,\r\n",
+							"    min=0,\r\n",
+							"    max=10.0,\r\n",
+							"    step=0.1,\r\n",
+							"    description='Test:',\r\n",
+							"    disabled=False,\r\n",
+							"    continuous_update=False,\r\n",
+							"    orientation='horizontal',\r\n",
+							"    readout=True,\r\n",
+							"    readout_format='.1f',\r\n",
+							")"
+						],
+						"outputs": [],
+						"execution_count": 13
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"widgets.FloatSlider(\r\n",
+							"    value=7.5,\r\n",
+							"    min=0,\r\n",
+							"    max=10.0,\r\n",
+							"    step=0.1,\r\n",
+							"    description='Test:',\r\n",
+							"    disabled=False,\r\n",
+							"    continuous_update=False,\r\n",
+							"    orientation='vertical',\r\n",
+							"    readout=True,\r\n",
+							"    readout_format='.1f',\r\n",
+							")"
+						],
+						"outputs": [],
+						"execution_count": 14
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"widgets.IntProgress(\r\n",
+							"    value=7,\r\n",
+							"    min=0,\r\n",
+							"    max=10,\r\n",
+							"    description='Loading:',\r\n",
+							"    bar_style='', # 'success', 'info', 'warning', 'danger' or ''\r\n",
+							"    style={'bar_color': 'maroon'},\r\n",
+							"    orientation='horizontal'\r\n",
+							")"
+						],
+						"outputs": [],
+						"execution_count": 15
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"widgets.RadioButtons(\r\n",
+							"    options=['pepperoni', 'pineapple', 'anchovies'],\r\n",
+							"#    value='pineapple', # Defaults to 'pineapple'\r\n",
+							"#    layout={'width': 'max-content'}, # If the items' names are long\r\n",
+							"    description='Pizza topping:',\r\n",
+							"    disabled=False\r\n",
+							")"
+						],
+						"outputs": [],
+						"execution_count": 16
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"widgets.Password(\r\n",
+							"    value='password',\r\n",
+							"    placeholder='Enter password',\r\n",
+							"    description='Password:',\r\n",
+							"    disabled=False\r\n",
+							")"
+						],
+						"outputs": [],
+						"execution_count": 17
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"widgets.HTML(\r\n",
+							"    value=\"Hello <b>World</b>\",\r\n",
+							"    placeholder='Some HTML',\r\n",
+							"    description='Some HTML',\r\n",
+							")"
+						],
+						"outputs": [],
+						"execution_count": 18
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"play = widgets.Play(\r\n",
+							"    value=50,\r\n",
+							"    min=0,\r\n",
+							"    max=100,\r\n",
+							"    step=1,\r\n",
+							"    interval=500,\r\n",
+							"    description=\"Press play\",\r\n",
+							"    disabled=False\r\n",
+							")\r\n",
+							"slider = widgets.IntSlider()\r\n",
+							"widgets.jslink((play, 'value'), (slider, 'value'))\r\n",
+							"widgets.HBox([play, slider])"
+						],
+						"outputs": [],
+						"execution_count": 19
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"color_tags = widgets.ColorsInput(\r\n",
+							"    value=['red', '#2f6d30'],\r\n",
+							"    # allowed_tags=['red', 'blue', 'green'],\r\n",
+							"    # allow_duplicates=False\r\n",
+							")\r\n",
+							"color_tags"
+						],
+						"outputs": [],
+						"execution_count": 21
+					}
+				]
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/LHSparkPool')]",
+			"type": "Microsoft.Synapse/workspaces/bigDataPools",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"autoPause": {
+					"enabled": true,
+					"delayInMinutes": 5
+				},
+				"autoScale": {
+					"enabled": false,
+					"maxNodeCount": 10,
+					"minNodeCount": 3
+				},
+				"nodeCount": 3,
+				"nodeSize": "Small",
+				"nodeSizeFamily": "MemoryOptimized",
+				"sparkVersion": "3.4",
+				"isComputeIsolationEnabled": false,
+				"sessionLevelPackagesEnabled": false,
+				"annotations": []
+			},
+			"dependsOn": [],
+			"location": "uksouth"
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/System Utilities fs Mount')]",
+			"type": "Microsoft.Synapse/workspaces/notebooks",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"nbformat": 4,
+				"nbformat_minor": 2,
+				"sessionProperties": {
+					"driverMemory": "28g",
+					"driverCores": 4,
+					"executorMemory": "28g",
+					"executorCores": 4,
+					"numExecutors": 2,
+					"conf": {
+						"spark.dynamicAllocation.enabled": "false",
+						"spark.dynamicAllocation.minExecutors": "2",
+						"spark.dynamicAllocation.maxExecutors": "2",
+						"spark.autotune.trackingId": "174c99a1-e9df-46aa-9d9e-cdc34a343cf8"
+					}
+				},
+				"metadata": {
+					"saveOutput": true,
+					"enableDebugMode": false,
+					"kernelspec": {
+						"name": "synapse_pyspark",
+						"display_name": "Synapse PySpark"
+					},
+					"language_info": {
+						"name": "python"
+					},
+					"sessionKeepAliveTimeout": 30
+				},
+				"cells": [
+					{
+						"cell_type": "markdown",
+						"metadata": {
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"## **Part 1 - Configure access to ADLS Gen2**"
+						]
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							},
+							"collapsed": false
+						},
+						"source": [
+							"df = spark.read.load('abfss://container1@newgen2storage267.dfs.core.windows.net/data/employee_data.csv', format='csv', header=True)\r\n",
+							"display(df)"
+						],
+						"outputs": [],
+						"execution_count": 29
+					},
+					{
+						"cell_type": "markdown",
+						"metadata": {
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"## **Part 2 - Mount by using a linked service**"
+						]
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"from notebookutils import mssparkutils"
+						],
+						"outputs": [],
+						"execution_count": 30
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"mssparkutils.fs.mount(\r\n",
+							"    \"abfss://container1@newgen2storage267.dfs.core.windows.net\",\r\n",
+							"    \"/test\",\r\n",
+							"    {\"LinkedService\":\"adlslinkedservice\"}\r\n",
+							")"
+						],
+						"outputs": [],
+						"execution_count": 31
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"mssparkutils.fs.mounts()"
+						],
+						"outputs": [],
+						"execution_count": 32
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"path = mssparkutils.fs.getMountPath(\"/test\")\r\n",
+							"print(path)"
+						],
+						"outputs": [],
+						"execution_count": 33
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"jobid = mssparkutils.env.getJobId()\r\n",
+							"print(jobid)"
+						],
+						"outputs": [],
+						"execution_count": 34
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							},
+							"collapsed": false
+						},
+						"source": [
+							"# Read content using the Spark read API\r\n",
+							"\r\n",
+							"df = spark.read.load('synfs:/' + jobid + '/test/data/employee_data.csv',format='csv', header=True)\r\n",
+							"display(df)"
+						],
+						"outputs": [],
+						"execution_count": 35
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"# read the file content using mssparkutils fs API\r\n",
+							"\r\n",
+							"mssparkutils.fs.head('synfs:/10/test/data/employee_data.csv')"
+						],
+						"outputs": [],
+						"execution_count": 36
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"# create a directory\r\n",
+							"\r\n",
+							"mssparkutils.fs.mkdirs('synfs:/10/test/newdir')"
+						],
+						"outputs": [],
+						"execution_count": 37
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"# list directories\r\n",
+							"mssparkutils.fs.ls('synfs:/10/test')"
+						],
+						"outputs": [],
+						"execution_count": 38
+					},
+					{
+						"cell_type": "markdown",
+						"metadata": {
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"## **Part 3 - Mount via account key**"
+						]
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"from notebookutils import mssparkutils"
+						],
+						"outputs": [],
+						"execution_count": 39
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"# storage account -> Access keys\r\n",
+							"accountKey = <accountKey>\r\n",
+							"\r\n",
+							"mssparkutils.fs.mount(\r\n",
+							"    \"abfss://container1@newgen2storage267.dfs.core.windows.net\",\r\n",
+							"    \"/test2\",\r\n",
+							"    {\"accountKey\":accountKey}\r\n",
+							")"
+						],
+						"outputs": [],
+						"execution_count": 40
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							},
+							"collapsed": false
+						},
+						"source": [
+							"# Read content using the Spark read API\r\n",
+							"\r\n",
+							"df = spark.read.load('synfs:/' + jobid + '/test2/data/employee_data.csv',format='csv', header=True)\r\n",
+							"display(df)"
+						],
+						"outputs": [],
+						"execution_count": 41
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"# read the file content using mssparkutils fs API\r\n",
+							"\r\n",
+							"mssparkutils.fs.head('synfs:/10/test2/data/employee_data.csv')"
+						],
+						"outputs": [],
+						"execution_count": 42
+					},
+					{
+						"cell_type": "markdown",
+						"metadata": {
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"## **Part 4 - Mount via shared access signature token**"
+						]
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"from notebookutils import mssparkutils"
+						],
+						"outputs": [],
+						"execution_count": 43
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"# storage account -> SAS -> create\r\n",
+							"sasToken = \"sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupyx&se=2024-02-20T05:13:10Z&st=2024-02-19T21:13:10Z&spr=https&sig=aSODX44DRPWVD72H%2BZVGzsHXdGFpiztdovmShl1d3E4%3D\"\r\n",
+							"\r\n",
+							"mssparkutils.fs.mount(\r\n",
+							"    \"abfss://container1@newgen2storage267.dfs.core.windows.net\",\r\n",
+							"    \"/test3\",\r\n",
+							"    {\"sasToken\":sasToken}\r\n",
+							")"
+						],
+						"outputs": [],
+						"execution_count": 44
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							},
+							"collapsed": false
+						},
+						"source": [
+							"# Read content using the Spark read API\r\n",
+							"\r\n",
+							"df = spark.read.load('synfs:/' + jobid + '/test3/data/employee_data.csv',format='csv', header=True)\r\n",
+							"display(df)"
+						],
+						"outputs": [],
+						"execution_count": 45
+					},
+					{
+						"cell_type": "markdown",
+						"metadata": {
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"## **Part 5 - Add secret**"
+						]
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"from notebookutils import mssparkutils"
+						],
+						"outputs": [],
+						"execution_count": 48
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"accountKey = mssparkutils.credentials.getSecret('lh-dp-203-key-vault', 'lhadlsgen2storageAccountKey')\r\n",
+							"\r\n",
+							"mssparkutils.fs.mount(\r\n",
+							"    \"abfss://lh-synapse-container@lhadlsgen2storage.dfs.core.windows.net\",\r\n",
+							"    \"/mount\",\r\n",
+							"    {\"accountKey\":accountKey}\r\n",
+							")"
+						],
+						"outputs": [],
+						"execution_count": 49
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							},
+							"collapsed": false
+						},
+						"source": [
+							"# Read content using the Spark read API\r\n",
+							"\r\n",
+							"df = spark.read.load('synfs:/' + jobid + '/test4/data/employee_data.csv',format='csv', header=True)\r\n",
+							"display(df)"
+						],
+						"outputs": [],
+						"execution_count": 50
+					},
+					{
+						"cell_type": "markdown",
+						"metadata": {
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"## **Part 6 - Unmount the mount point**"
+						]
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"from notebookutils import mssparkutils"
+						],
+						"outputs": [],
+						"execution_count": 51
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"mssparkutils.fs.mounts()"
+						],
+						"outputs": [],
+						"execution_count": 58
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"mssparkutils.fs.unmount('/test')"
+						],
+						"outputs": [],
+						"execution_count": 53
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"mssparkutils.fs.unmount('/test2')"
+						],
+						"outputs": [],
+						"execution_count": 54
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"mssparkutils.fs.unmount('/test3')"
+						],
+						"outputs": [],
+						"execution_count": 55
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"mssparkutils.fs.unmount('/test4')"
+						],
+						"outputs": [],
+						"execution_count": 57
+					}
+				]
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/System Utilities notebook')]",
+			"type": "Microsoft.Synapse/workspaces/notebooks",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"nbformat": 4,
+				"nbformat_minor": 2,
+				"sessionProperties": {
+					"driverMemory": "28g",
+					"driverCores": 4,
+					"executorMemory": "28g",
+					"executorCores": 4,
+					"numExecutors": 2,
+					"conf": {
+						"spark.dynamicAllocation.enabled": "false",
+						"spark.dynamicAllocation.minExecutors": "2",
+						"spark.dynamicAllocation.maxExecutors": "2",
+						"spark.autotune.trackingId": "40bec805-ed9f-466a-9743-86289b780ac3"
+					}
+				},
+				"metadata": {
+					"saveOutput": true,
+					"enableDebugMode": false,
+					"kernelspec": {
+						"name": "synapse_pyspark",
+						"display_name": "Synapse PySpark"
+					},
+					"language_info": {
+						"name": "python"
+					},
+					"sessionKeepAliveTimeout": 30
+				},
+				"cells": [
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"from notebookutils import mssparkutils"
+						],
+						"outputs": [],
+						"execution_count": 3
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"mssparkutils.notebook.help()"
+						],
+						"outputs": [],
+						"execution_count": 4
+					},
+					{
+						"cell_type": "markdown",
+						"metadata": {
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"<u>**Exit Func**</u>"
+						]
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"# Exits when this cell executes\r\n",
+							"\r\n",
+							"first_name = \"Lee\"\r\n",
+							"mssparkutils.notebook.exit(first_name)"
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "markdown",
+						"metadata": {
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"<u>**Run Func**</u>"
+						]
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"# Refrence a notebook\r\n",
+							"\r\n",
+							"mssparkutils.notebook.run('sample_notebook_1', 1200)"
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"# Refrence a notebook with parameters\r\n",
+							"\r\n",
+							"mssparkutils.notebook.run('sample_notebook_1', 1200, {'first_name':'Tony', 'last_name':'Stark'})"
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"# Run multiple notebooks in parellel\r\n",
+							"\r\n",
+							"mssparkutils.notebook.runMultiple(['sample_notebook_1', 'sample_notebook_2'])"
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"# run multiple notebooks with parameters\r\n",
+							"\r\n",
+							"DAG = {\r\n",
+							"    \"activities\": [\r\n",
+							"        {\r\n",
+							"            \"name\": \"name_1\", # activity name, must be unique\r\n",
+							"            \"path\": \"sample_notebook_1\", # notebook path\r\n",
+							"            \"timeoutPerCellInSeconds\": 1200, # max timeout for each cell, default to 90 seconds\r\n",
+							"            \"args\": {\"first_name\": \"Sara\", \"last_name\": \"White\"}, # notebook parameters\r\n",
+							"        },\r\n",
+							"        {\r\n",
+							"            \"name\": \"name_2\",\r\n",
+							"            \"path\": \"sample_notebook_2\",\r\n",
+							"            \"timeoutPerCellInSeconds\": 1200,\r\n",
+							"            \"args\": {\"first_name\": \"Joe\", \"last_name\": \"Green\"}\r\n",
+							"        }\r\n",
+							"    ]\r\n",
+							"}\r\n",
+							"mssparkutils.notebook.runMultiple(DAG)"
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "markdown",
+						"metadata": {
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"<u>**Runtime Context**</u>"
+						]
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"mssparkutils.runtime.context"
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "markdown",
+						"metadata": {
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"<u>**Environment Utilities**</u>"
+						]
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"mssparkutils.env.help()"
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"mssparkutils.env.getUserName()"
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"mssparkutils.env.getUserId()"
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"mssparkutils.env.getJobId()"
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"mssparkutils.env.getWorkspaceName()"
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"mssparkutils.env.getPoolName()"
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"mssparkutils.env.getClusterId()"
+						],
+						"outputs": [],
+						"execution_count": null
+					}
+				]
 			},
 			"dependsOn": []
 		}
