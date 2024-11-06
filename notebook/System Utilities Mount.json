@@ -13,7 +13,7 @@
 				"spark.dynamicAllocation.enabled": "false",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "da6916b1-e091-461e-b164-15c80ebd8365"
+				"spark.autotune.trackingId": "2568d18d-7c50-4d29-85f6-c9a8fa75619a"
 			}
 		},
 		"metadata": {
@@ -298,7 +298,7 @@
 				},
 				"source": [
 					"# storage account -> Access keys\r\n",
-					"\r\n",
+					"accountKey = <accountKey>\r\n",
 					"\r\n",
 					"mssparkutils.fs.mount(\r\n",
 					"    \"abfss://container1@newgen2storage267.dfs.core.windows.net\",\r\n",
@@ -438,7 +438,7 @@
 					}
 				},
 				"source": [
-					"## **Part 5 - Add **"
+					"## **Part 5 - Add secret**"
 				]
 			},
 			{
@@ -473,7 +473,7 @@
 					}
 				},
 				"source": [
-					"\r\n",
+					"accountKey = mssparkutils.credentials.getSecret('lh-dp-203-key-vault', 'lhadlsgen2storageAccountKey')\r\n",
 					"\r\n",
 					"mssparkutils.fs.mount(\r\n",
 					"    \"abfss://lh-synapse-container@lhadlsgen2storage.dfs.core.windows.net\",\r\n",
