@@ -1,0 +1,10 @@
+{
+	"name": "AzureKeyVault",
+	"properties": {
+		"annotations": [],
+		"type": "AzureKeyVault",
+		"typeProperties": {
+			"baseUrl": "https://lh-dp-203-key-vault.vault.azure.net/"
+		}
+	}
+}
