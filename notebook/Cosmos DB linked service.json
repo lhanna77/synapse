@@ -13,7 +13,7 @@
 				"spark.dynamicAllocation.enabled": "false",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "fe49fff9-a534-4d41-b87a-2d04068ddb76"
+				"spark.autotune.trackingId": "26888e91-48d8-46ad-bb8e-5ee7b37d8ae4"
 			}
 		},
 		"metadata": {
@@ -30,6 +30,19 @@
 		},
 		"cells": [
 			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"## Loading Azure Cosmos DB analytical data into a dataframe"
+				]
+			},
+			{
 				"cell_type": "code",
 				"source": [
 					" df = spark.read\r\n",
@@ -39,6 +52,110 @@
 					"     .load()\r\n",
 					"\r\n",
 					"display(df.limit(10))"
+				],
+				"execution_count": null
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"students_df = df.select(\"name\", \"age\").orderBy(\"age\")\r\n",
+					"\r\n",
+					"display(students_df.limit(10))"
+				],
+				"execution_count": null
+			},
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"## Writing a dataframe to a Cosmos DB container"
+				]
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"mydf.write.format(\"cosmos.oltp\")\\\r\n",
+					"    .option(\"spark.synapse.linkedService\", \"CosmosDbNoSql\")\\\r\n",
+					"    .option(\"spark.cosmos.container\", \"student-info\")\\\r\n",
+					"    .mode('append')\\\r\n",
+					"    .save()"
+				],
+				"execution_count": null
+			},
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"## Using Spark SQL to query Azure Cosmos DB analytical data"
+				]
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					},
+					"microsoft": {
+						"language": "sparksql"
+					}
+				},
+				"source": [
+					"%%sql\r\n",
+					"\r\n",
+					"-- Create a logical database in the Spark metastore\r\n",
+					"CREATE DATABASE mydb;\r\n",
+					"\r\n",
+					"USE mydb;\r\n",
+					"\r\n",
+					"-- Create a table from the Cosmos DB container\r\n",
+					"CREATE TABLE students using cosmos.olap options (\r\n",
+					"    spark.synapse.linkedService 'CosmosDbNoSql',\r\n",
+					"    spark.cosmos.container 'student-info'\r\n",
+					");\r\n",
+					"\r\n",
+					"-- Query the table\r\n",
+					"SELECT name, age\r\n",
+					"FROM students;"
 				],
 				"execution_count": null
 			}
