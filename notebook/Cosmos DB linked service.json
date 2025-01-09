@@ -13,7 +13,7 @@
 				"spark.dynamicAllocation.enabled": "false",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "5c58261c-640b-47ea-93e8-caaf583e5985"
+				"spark.autotune.trackingId": "fe49fff9-a534-4d41-b87a-2d04068ddb76"
 			}
 		},
 		"metadata": {
@@ -34,8 +34,8 @@
 				"source": [
 					" df = spark.read\r\n",
 					"     .format(\"cosmos.olap\")\\\r\n",
-					"     .option(\"spark.synapse.linkedService\", \"my_linked_service\")\\\r\n",
-					"     .option(\"spark.cosmos.container\", \"my-container\")\\\r\n",
+					"     .option(\"spark.synapse.linkedService\", \"CosmosDbNoSql\")\\\r\n",
+					"     .option(\"spark.cosmos.container\", \"student-info\")\\\r\n",
 					"     .load()\r\n",
 					"\r\n",
 					"display(df.limit(10))"
