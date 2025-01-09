@@ -1,0 +1,47 @@
+{
+	"name": "Cosmos DB linked service",
+	"properties": {
+		"nbformat": 4,
+		"nbformat_minor": 2,
+		"sessionProperties": {
+			"driverMemory": "28g",
+			"driverCores": 4,
+			"executorMemory": "28g",
+			"executorCores": 4,
+			"numExecutors": 2,
+			"conf": {
+				"spark.dynamicAllocation.enabled": "false",
+				"spark.dynamicAllocation.minExecutors": "2",
+				"spark.dynamicAllocation.maxExecutors": "2",
+				"spark.autotune.trackingId": "5c58261c-640b-47ea-93e8-caaf583e5985"
+			}
+		},
+		"metadata": {
+			"saveOutput": true,
+			"enableDebugMode": false,
+			"kernelspec": {
+				"name": "synapse_pyspark",
+				"display_name": "python"
+			},
+			"language_info": {
+				"name": "python"
+			},
+			"sessionKeepAliveTimeout": 30
+		},
+		"cells": [
+			{
+				"cell_type": "code",
+				"source": [
+					" df = spark.read\r\n",
+					"     .format(\"cosmos.olap\")\\\r\n",
+					"     .option(\"spark.synapse.linkedService\", \"my_linked_service\")\\\r\n",
+					"     .option(\"spark.cosmos.container\", \"my-container\")\\\r\n",
+					"     .load()\r\n",
+					"\r\n",
+					"display(df.limit(10))"
+				],
+				"execution_count": null
+			}
+		]
+	}
+}
