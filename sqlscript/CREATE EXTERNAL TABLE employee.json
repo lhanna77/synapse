@@ -1,6 +1,9 @@
 {
 	"name": "CREATE EXTERNAL TABLE employee",
 	"properties": {
+		"folder": {
+			"name": "Serverless"
+		},
 		"content": {
 			"query": "IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'demoDB')\n    CREATE DATABASE demoDB\nGO\n\nUSE demoDB\nGO\n\n-----\n\nIF NOT EXISTS (SELECT * FROM sys.schemas WHERE name = 'NYCTaxi')\n\tCREATE SCHEMA NYCTaxi\nGO\n\n-----\n\nCREATE EXTERNAL TABLE NYCTaxi.employee (\n\t[empid] bigint,\n\t[empName] nvarchar(4000),\n\t[salary] bigint,\n\t[dept] nvarchar(4000)\n\t)\n\tWITH (\n\tLOCATION = 'Data/employee.csv',\n\tDATA_SOURCE = myDataSourceManagedABFSS,\n\tFILE_FORMAT = delimitedFileFormat\n\t)\nGO\n\n\nSELECT TOP 100 * FROM NYCTaxi.employee\nGO",
 			"metadata": {
