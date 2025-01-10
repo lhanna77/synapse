@@ -8,7 +8,7 @@
 		"AzureDataLakeGen2Storage_accountKey": {
 			"value": ""
 		},
-		"CosmosDbNoSql_connectionString": {
+		"CosmosDbNoSql_AdventureWorks_connectionString": {
 			"value": ""
 		},
 		"lh-synapse-ws-WorkspaceDefaultSqlServer_connectionString": {
