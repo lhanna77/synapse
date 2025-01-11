@@ -1,0 +1,20 @@
+{
+	"name": "Use Azure Synapse Link for SQL",
+	"properties": {
+		"folder": {
+			"name": "Serverless/AdventureWorks Cosmos DB database"
+		},
+		"content": {
+			"query": "-- Configure Azure SQL Database\n\nIn the page for your Azure SQL Server resource -> Security -> Identity. \nThen under System assigned managed identity, set the Status option to On. Then use the 🖫 Save icon to save your configuration change.\n\nSecurity -> Networking. \nThen, under Firewall rules, select the exception to Allow Azure services and resources to access this server.\n\n＋ Add a firewall rule\n\nRule name\tStart IP\tEnd IP\nAllClients\t0.0.0.0\t    255.255.255.255\n\nSave\n\nYour Azure SQL server hosts a sample database named AdventureWorksLT. \nThis database represents a transactional database used for operational application data.\n\nIn the Overview page for your Azure SQL server, at the bottom of the, select the AdventureWorksLT database:\nIn the AdventureWorksLT database page, select the Query editor tab and log in using SQL server authentication with the following credentials:\n\nLogin SQLUser\nPassword: The password you specified when running the setup script.\n\nWhen the query editor opens, expand the Tables node and view the list of tables in the database. Note that they include tables in a SalesLT schema (for example, SalesLT.Customer).\n\n-- Configure Azure Synapse Link\n\nStart dedicated SQL pool\n\nNew SQL script -> Empty script.\n\nCREATE SCHEMA SalesLT;\nGO\n\n-- Create a link connection\n\nSource type: Azure SQL database\nSource linked service: Add a new linked service with the following settings (a new tab will be opened):\nName: SqlAdventureWorksLT\nDescription: Connection to AdventureWorksLT database\nConnect via integration runtime: AutoResolveIntegrationRuntime\nVersion: Legacy\nConnection String: Selected\nFrom Azure subscription: Selected\nAzure subscription: Select your Azure subscription\nServer name: Select your sqldbxxxxxxx Azure SQL server\nDatabase name: AdventureWorksLT\nAuthentication type: SQL authentication\nUser name: SQLUser\nPassword: The password you set when running the setup script\n",
+			"metadata": {
+				"language": "sql"
+			},
+			"currentConnection": {
+				"databaseName": "master",
+				"poolName": "Built-in"
+			},
+			"resultLimit": 5000
+		},
+		"type": "SqlQuery"
+	}
+}
