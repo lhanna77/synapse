@@ -5,7 +5,7 @@
 			"name": "Serverless"
 		},
 		"content": {
-			"query": "CREATE LOGIN brooke WITH PASSWORD = 'Azure@123';\n\nCREATE USER brooke FROM LOGIN brooke;\n\nALTER ROLE db_owner ADD MEMBER brooke;",
+			"query": "CREATE LOGIN brooke WITH PASSWORD = 'Azure@123';\n\nCREATE USER brooke FROM LOGIN brooke;\n\nALTER ROLE db_owner ADD MEMBER brooke;\n\n-- For ADF SQL Db\n\nCREATE LOGIN lhanna12 \n\tWITH PASSWORD = 'Azure@123' \nGO\n\nUSE [lh-formula1-db]\n\tCREATE USER lhanna12 FOR LOGIN lhanna12\nGO\n\nALTER ROLE db_owner ADD MEMBER lhanna12;",
 			"metadata": {
 				"language": "sql"
 			},
