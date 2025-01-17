@@ -436,7 +436,7 @@
 					"name": "Serverless"
 				},
 				"content": {
-					"query": "CREATE LOGIN brooke WITH PASSWORD = 'Azure@123';\n\nCREATE USER brooke FROM LOGIN brooke;\n\nALTER ROLE db_owner ADD MEMBER brooke;",
+					"query": "CREATE LOGIN brooke WITH PASSWORD = 'Azure@123';\n\nCREATE USER brooke FROM LOGIN brooke;\n\nALTER ROLE db_owner ADD MEMBER brooke;\n\n-- For ADF SQL Db\n\nCREATE LOGIN lhanna12 \n\tWITH PASSWORD = 'Azure@123' \nGO\n\nUSE [lh-formula1-db]\n\tCREATE USER lhanna12 FOR LOGIN lhanna12\nGO\n\nALTER ROLE db_owner ADD MEMBER lhanna12;",
 					"metadata": {
 						"language": "sql"
 					},
@@ -635,6 +635,29 @@
 			"dependsOn": []
 		},
 		{
+			"name": "[concat(parameters('workspaceName'), '/Query Azure Cosmos DB from a serverless SQL pool')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"folder": {
+					"name": "Serverless/AdventureWorks Cosmos DB database"
+				},
+				"content": {
+					"query": "-- CREATE CREDENTIAL [lh-cosmos-db-acc]\n-- WITH IDENTITY = 'SHARED ACCESS SIGNATURE',\n-- SECRET = ''\n-- GO\n\n-- SELECT TOP 100 *\n-- FROM OPENROWSET(​PROVIDER = 'CosmosDB',\n--                 CONNECTION = 'Account=lh-cosmos-db-acc;Database=AdventureWorks',\n--                 OBJECT = 'Sales',\n--                 SERVER_CREDENTIAL = 'lh-cosmos-db-acc'\n-- ) AS [Sales]\n\nSELECT *\nFROM OPENROWSET(​PROVIDER = 'CosmosDB',\n                CONNECTION = 'Account=lh-cosmos-db-acc;Database=AdventureWorks',\n                OBJECT = 'Sales',\n                SERVER_CREDENTIAL = 'lh-cosmos-db-acc'\n)\nWITH (\n    OrderID VARCHAR(10) '$.id',\n    OrderDate VARCHAR(10) '$.orderdate',\n    CustomerID INTEGER '$.customerid',\n    CustomerName VARCHAR(40) '$.customerdetails.customername',\n    CustomerEmail VARCHAR(30) '$.customerdetails.customeremail',\n    Product VARCHAR(30) '$.product',\n    Quantity INTEGER '$.quantity',\n    Price FLOAT '$.price'\n)\nAS sales\nORDER BY OrderID;",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "master",
+						"poolName": "Built-in"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		},
+		{
 			"name": "[concat(parameters('workspaceName'), '/RENAME DROP TABLE')]",
 			"type": "Microsoft.Synapse/workspaces/sqlscripts",
 			"apiVersion": "2019-06-01-preview",
@@ -690,6 +713,29 @@
 				},
 				"content": {
 					"query": "-- This is auto-generated code\nSELECT\n    TOP 100 *\nFROM\n    OPENROWSET(\n        BULK 'https://lhadlsgen2storage.dfs.core.windows.net/lh-synapse-container/Data/employee.csv',\n        FORMAT = 'CSV',\n        HEADER_ROW = TRUE,\n        PARSER_VERSION = '2.0'\n    ) AS [result]\n",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "master",
+						"poolName": "Built-in"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/Use Azure Synapse Link for SQL')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"folder": {
+					"name": "Serverless/AdventureWorks Cosmos DB database"
+				},
+				"content": {
+					"query": "-- Configure Azure SQL Database\n\nIn the page for your Azure SQL Server resource -> Security -> Identity. \nThen under System assigned managed identity, set the Status option to On. Then use the 🖫 Save icon to save your configuration change.\n\nSecurity -> Networking. \nThen, under Firewall rules, select the exception to Allow Azure services and resources to access this server.\n\n＋ Add a firewall rule\n\nRule name\tStart IP\tEnd IP\nAllClients\t0.0.0.0\t    255.255.255.255\n\nSave\n\nYour Azure SQL server hosts a sample database named AdventureWorksLT. \nThis database represents a transactional database used for operational application data.\n\nIn the Overview page for your Azure SQL server, at the bottom of the, select the AdventureWorksLT database:\nIn the AdventureWorksLT database page, select the Query editor tab and log in using SQL server authentication with the following credentials:\n\nLogin SQLUser\nPassword: The password you specified when running the setup script.\n\nWhen the query editor opens, expand the Tables node and view the list of tables in the database. Note that they include tables in a SalesLT schema (for example, SalesLT.Customer).\n\n-- Configure Azure Synapse Link\n\nStart dedicated SQL pool\n\nNew SQL script -> Empty script.\n\n-- Configure Azure SQL Database\n\nCREATE USER my_synapse_workspace FROM EXTERNAL PROVIDER;\nALTER ROLE [db_owner] ADD MEMBER my_synapse_workspace;\n\nCREATE SCHEMA SalesLT;\nGO\n\n-- Create a link connection\n\nSource type: Azure SQL database\nSource linked service: Add a new linked service with the following settings (a new tab will be opened):\nName: SqlAdventureWorksLT\nDescription: Connection to AdventureWorksLT database\nConnect via integration runtime: AutoResolveIntegrationRuntime\nVersion: Legacy\nConnection String: Selected\nFrom Azure subscription: Selected\nAzure subscription: Select your Azure subscription\nServer name: Select your sqldbxxxxxxx Azure SQL server\nDatabase name: AdventureWorksLT\nAuthentication type: SQL authentication\nUser name: SQLUser\nPassword: The password you set when running the setup script\n",
 					"metadata": {
 						"language": "sql"
 					},
@@ -1474,6 +1520,177 @@
 						},
 						"source": [
 							"%run /Parameters {\"first_name\":\"Tony\", \"last_name\":\"Stark\"}"
+						],
+						"outputs": [],
+						"execution_count": null
+					}
+				]
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/Query Azure Cosmos DB from a Spark pool')]",
+			"type": "Microsoft.Synapse/workspaces/notebooks",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"folder": {
+					"name": "AdventureWorks Cosmos DB database"
+				},
+				"nbformat": 4,
+				"nbformat_minor": 2,
+				"bigDataPool": {
+					"referenceName": "LHSparkPool",
+					"type": "BigDataPoolReference"
+				},
+				"sessionProperties": {
+					"driverMemory": "28g",
+					"driverCores": 4,
+					"executorMemory": "28g",
+					"executorCores": 4,
+					"numExecutors": 2,
+					"conf": {
+						"spark.dynamicAllocation.enabled": "false",
+						"spark.dynamicAllocation.minExecutors": "2",
+						"spark.dynamicAllocation.maxExecutors": "2",
+						"spark.autotune.trackingId": "f6724120-5833-42da-ae50-ee002d940f45"
+					}
+				},
+				"metadata": {
+					"saveOutput": true,
+					"enableDebugMode": false,
+					"kernelspec": {
+						"name": "synapse_pyspark",
+						"display_name": "python"
+					},
+					"language_info": {
+						"name": "python"
+					},
+					"a365ComputeOptions": {
+						"id": "/subscriptions/05174b2b-36c5-447e-a3b3-c8f02ccb85dc/resourceGroups/lh-synapse-rg/providers/Microsoft.Synapse/workspaces/lh-synapse-ws/bigDataPools/LHSparkPool",
+						"name": "LHSparkPool",
+						"type": "Spark",
+						"endpoint": "https://lh-synapse-ws.dev.azuresynapse.net/livyApi/versions/2019-11-01-preview/sparkPools/LHSparkPool",
+						"auth": {
+							"type": "AAD",
+							"authResource": "https://dev.azuresynapse.net"
+						},
+						"sparkVersion": "3.4",
+						"nodeCount": 3,
+						"cores": 4,
+						"memory": 28
+					},
+					"sessionKeepAliveTimeout": 30
+				},
+				"cells": [
+					{
+						"cell_type": "markdown",
+						"metadata": {
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"## Query Azure Cosmos DB from Azure Synapse Analytics"
+						]
+					},
+					{
+						"cell_type": "code",
+						"source": [
+							"# Read from Cosmos DB analytical store into a Spark DataFrame and display 10 rows from the DataFrame\n",
+							"# To select a preferred list of regions in a multi-region Cosmos DB account, add .option(\"spark.cosmos.preferredRegions\", \"<Region1>,<Region2>\")\n",
+							"\n",
+							"df = spark.read\\\n",
+							"    .format(\"cosmos.olap\")\\\n",
+							"    .option(\"spark.synapse.linkedService\", \"CosmosDbNoSql_AdventureWorks\")\\\n",
+							"    .option(\"spark.cosmos.container\", \"Sales\")\\\n",
+							"    .load()\n",
+							"\n",
+							"display(df.limit(10))"
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							" customerdetails_df = df.select(\"customerid\", \"customerdetails.*\")\r\n",
+							" display(customerdetails_df)"
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							},
+							"microsoft": {
+								"language": "sparksql"
+							}
+						},
+						"source": [
+							" %%sql\r\n",
+							"\r\n",
+							" -- Create a logical database in the Spark metastore\r\n",
+							" CREATE DATABASE salesdb;\r\n",
+							"\r\n",
+							" USE salesdb;\r\n",
+							"\r\n",
+							" -- Create a table from the Cosmos DB container\r\n",
+							" CREATE TABLE salesorders using cosmos.olap options (\r\n",
+							"     spark.synapse.linkedService 'AdventureWorks',\r\n",
+							"     spark.cosmos.container 'Sales'\r\n",
+							" );\r\n",
+							"\r\n",
+							" -- Query the table\r\n",
+							" SELECT *\r\n",
+							" FROM salesorders;"
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							},
+							"microsoft": {
+								"language": "sparksql"
+							}
+						},
+						"source": [
+							"%%sql\r\n",
+							"\r\n",
+							"SELECT id, orderdate, customerdetails.customername, product\r\n",
+							"FROM salesorders\r\n",
+							"ORDER BY id;"
 						],
 						"outputs": [],
 						"execution_count": null
@@ -4568,202 +4785,6 @@
 			},
 			"dependsOn": [],
 			"location": "uksouth"
-		},
-		{
-			"name": "[concat(parameters('workspaceName'), '/Query Azure Cosmos DB from a Spark pool')]",
-			"type": "Microsoft.Synapse/workspaces/notebooks",
-			"apiVersion": "2019-06-01-preview",
-			"properties": {
-				"folder": {
-					"name": "AdventureWorks Cosmos DB database"
-				},
-				"nbformat": 4,
-				"nbformat_minor": 2,
-				"bigDataPool": {
-					"referenceName": "LHSparkPool",
-					"type": "BigDataPoolReference"
-				},
-				"sessionProperties": {
-					"driverMemory": "28g",
-					"driverCores": 4,
-					"executorMemory": "28g",
-					"executorCores": 4,
-					"numExecutors": 2,
-					"conf": {
-						"spark.dynamicAllocation.enabled": "false",
-						"spark.dynamicAllocation.minExecutors": "2",
-						"spark.dynamicAllocation.maxExecutors": "2",
-						"spark.autotune.trackingId": "bb7bfe76-9cfe-4c31-be3b-8683f171776a"
-					}
-				},
-				"metadata": {
-					"saveOutput": true,
-					"enableDebugMode": false,
-					"kernelspec": {
-						"name": "synapse_pyspark",
-						"display_name": "python"
-					},
-					"language_info": {
-						"name": "python"
-					},
-					"a365ComputeOptions": {
-						"id": "/subscriptions/05174b2b-36c5-447e-a3b3-c8f02ccb85dc/resourceGroups/lh-synapse-rg/providers/Microsoft.Synapse/workspaces/lh-synapse-ws/bigDataPools/LHSparkPool",
-						"name": "LHSparkPool",
-						"type": "Spark",
-						"endpoint": "https://lh-synapse-ws.dev.azuresynapse.net/livyApi/versions/2019-11-01-preview/sparkPools/LHSparkPool",
-						"auth": {
-							"type": "AAD",
-							"authResource": "https://dev.azuresynapse.net"
-						},
-						"sparkVersion": "3.4",
-						"nodeCount": 3,
-						"cores": 4,
-						"memory": 28,
-						"automaticScaleJobs": false
-					},
-					"sessionKeepAliveTimeout": 30
-				},
-				"cells": [
-					{
-						"cell_type": "markdown",
-						"metadata": {
-							"nteract": {
-								"transient": {
-									"deleting": false
-								}
-							}
-						},
-						"source": [
-							"## Query Azure Cosmos DB from Azure Synapse Analytics"
-						]
-					},
-					{
-						"cell_type": "code",
-						"metadata": {},
-						"source": [
-							"# Read from Cosmos DB analytical store into a Spark DataFrame and display 10 rows from the DataFrame\n",
-							"# To select a preferred list of regions in a multi-region Cosmos DB account, add .option(\"spark.cosmos.preferredRegions\", \"<Region1>,<Region2>\")\n",
-							"\n",
-							"df = spark.read\\\n",
-							"    .format(\"cosmos.olap\")\\\n",
-							"    .option(\"spark.synapse.linkedService\", \"CosmosDbNoSql_AdventureWorks\")\\\n",
-							"    .option(\"spark.cosmos.container\", \"Sales\")\\\n",
-							"    .load()\n",
-							"\n",
-							"display(df.limit(10))"
-						],
-						"outputs": [],
-						"execution_count": null
-					},
-					{
-						"cell_type": "code",
-						"metadata": {
-							"jupyter": {
-								"source_hidden": false,
-								"outputs_hidden": false
-							},
-							"nteract": {
-								"transient": {
-									"deleting": false
-								}
-							}
-						},
-						"source": [
-							" customerdetails_df = df.select(\"customerid\", \"customerdetails.*\")\r\n",
-							" display(customerdetails_df)"
-						],
-						"outputs": [],
-						"execution_count": null
-					},
-					{
-						"cell_type": "code",
-						"metadata": {
-							"jupyter": {
-								"source_hidden": false,
-								"outputs_hidden": false
-							},
-							"nteract": {
-								"transient": {
-									"deleting": false
-								}
-							},
-							"microsoft": {
-								"language": "sparksql"
-							}
-						},
-						"source": [
-							" %%sql\r\n",
-							"\r\n",
-							" -- Create a logical database in the Spark metastore\r\n",
-							" CREATE DATABASE salesdb;\r\n",
-							"\r\n",
-							" USE salesdb;\r\n",
-							"\r\n",
-							" -- Create a table from the Cosmos DB container\r\n",
-							" CREATE TABLE salesorders using cosmos.olap options (\r\n",
-							"     spark.synapse.linkedService 'AdventureWorks',\r\n",
-							"     spark.cosmos.container 'Sales'\r\n",
-							" );\r\n",
-							"\r\n",
-							" -- Query the table\r\n",
-							" SELECT *\r\n",
-							" FROM salesorders;"
-						],
-						"outputs": [],
-						"execution_count": null
-					},
-					{
-						"cell_type": "code",
-						"metadata": {
-							"jupyter": {
-								"source_hidden": false,
-								"outputs_hidden": false
-							},
-							"nteract": {
-								"transient": {
-									"deleting": false
-								}
-							},
-							"microsoft": {
-								"language": "sparksql"
-							}
-						},
-						"source": [
-							"%%sql\r\n",
-							"\r\n",
-							"SELECT id, orderdate, customerdetails.customername, product\r\n",
-							"FROM salesorders\r\n",
-							"ORDER BY id;"
-						],
-						"outputs": [],
-						"execution_count": null
-					}
-				]
-			},
-			"dependsOn": []
-		},
-		{
-			"name": "[concat(parameters('workspaceName'), '/Query Azure Cosmos DB from a serverless SQL pool')]",
-			"type": "Microsoft.Synapse/workspaces/sqlscripts",
-			"apiVersion": "2019-06-01-preview",
-			"properties": {
-				"folder": {
-					"name": "Serverless/AdventureWorks Cosmos DB database"
-				},
-				"content": {
-					"query": "-- CREATE CREDENTIAL [lh-cosmos-db-acc]\n-- WITH IDENTITY = 'SHARED ACCESS SIGNATURE',\n-- SECRET = ''\n-- GO\n\n-- SELECT TOP 100 *\n-- FROM OPENROWSET(​PROVIDER = 'CosmosDB',\n--                 CONNECTION = 'Account=lh-cosmos-db-acc;Database=AdventureWorks',\n--                 OBJECT = 'Sales',\n--                 SERVER_CREDENTIAL = 'lh-cosmos-db-acc'\n-- ) AS [Sales]\n\nSELECT *\nFROM OPENROWSET(​PROVIDER = 'CosmosDB',\n                CONNECTION = 'Account=lh-cosmos-db-acc;Database=AdventureWorks',\n                OBJECT = 'Sales',\n                SERVER_CREDENTIAL = 'lh-cosmos-db-acc'\n)\nWITH (\n    OrderID VARCHAR(10) '$.id',\n    OrderDate VARCHAR(10) '$.orderdate',\n    CustomerID INTEGER '$.customerid',\n    CustomerName VARCHAR(40) '$.customerdetails.customername',\n    CustomerEmail VARCHAR(30) '$.customerdetails.customeremail',\n    Product VARCHAR(30) '$.product',\n    Quantity INTEGER '$.quantity',\n    Price FLOAT '$.price'\n)\nAS sales\nORDER BY OrderID;",
-					"metadata": {
-						"language": "sql"
-					},
-					"currentConnection": {
-						"databaseName": "master",
-						"poolName": "Built-in"
-					},
-					"resultLimit": 5000
-				},
-				"type": "SqlQuery"
-			},
-			"dependsOn": []
 		}
 	]
 }
